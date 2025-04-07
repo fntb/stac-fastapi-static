@@ -1,0 +1,7 @@
+__pycache__/
+.pytest_cache/
+.venv/
+/build
+*.egg-info/
+/test_catalog_*/
+/stac_test_catalogs/

@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+.venv/
+/build
+*.egg-info/
+/stac_test_catalogs/
+/doc
+/.env
+
+/.vscode
+/Makefile
+/Dockerfile
+/Dockerfile.dockerignore

@@ -1,0 +1,34 @@
+services:
+
+  test-server:
+    image: fntb/stac-fastapi-static
+    environment:
+      - catalog_href=http://test-data-server:8080/catalog.json
+      - no_proxy=test-data-server
+    volumes:
+      - ./.env:/app/.env
+    ports:
+      - 8081:8081
+    depends_on:
+      - test-data-server
+    command: --host test-server --port 8081
+
+  test-data-server:
+    image: node:lts-slim
+    command: npx http-server /app --cors --port 8080
+    ports:
+      - 8080:8080
+    volumes:
+      - ./stac_test_catalogs/${n_items}:/app
+
+  test:
+    image: fntb/stac-fastapi-static:test
+    ports:
+      - 8082:8082
+    environment:
+      - n_items=${n_items}
+    volumes:
+      - ./stac_test_catalogs:/app/stac_test_catalogs/
+    command: python -m locust --host http://test-server:8081/ --web-port 8082 --csv doc/load
+    depends_on:
+      - test-server

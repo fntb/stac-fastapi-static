@@ -1,0 +1,17 @@
+{
+  "editor.formatOnSave": true,
+  "python.defaultInterpreterPath": "./.venv/bin/python",
+  "autoDocstring.docstringFormat": "google-notypes",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "python.analysis.exclude": ["stac_test_catalogs"],
+  "files.watcherExclude": {
+    "stac_test_catalogs": true
+  },
+  "autopep8.args": ["--max-line-length", "120"],
+  "makefile.configureOnOpen": false
+}

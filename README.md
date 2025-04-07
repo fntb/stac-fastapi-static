@@ -1,0 +1,67 @@
+# stac-fastapi-static
+
+<p align="center">
+  <img src="https://stacspec.org/public/images-original/STAC-01.png" style="vertical-align: middle; max-width: 400px; max-height: 100px;" height=100 />
+  <img src="https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png" alt="FastAPI" style="vertical-align: middle; max-width: 400px; max-height: 100px;" width=200 />
+</p>
+
+[Static STAC Catalog](https://github.com/radiantearth/stac-spec/tree/master/catalog-spec) backend for [stac-fastapi](https://github.com/stac-utils/stac-fastapi), the [FastAPI](https://fastapi.tiangolo.com/) implementation of the [STAC API spec](https://github.com/radiantearth/stac-api-spec).
+
+_This project is still in (late) initial development phase._
+
+## Overview
+
+**stac-fastapi-static** is a [stac-fastapi](https://github.com/stac-utils/stac-fastapi) backend built in [FastAPI](https://fastapi.tiangolo.com/). It provides an implementation of the [STAC API spec](https://github.com/radiantearth/stac-api-spec) ready to be deployed on top of a static STAC catalog. The target backend static catalog can be remotely hosted (by any static HTTP server) or locally hosted (filesystem).
+
+## STAC API Support
+
+| Extension                                                                                        | Support |
+| ------------------------------------------------------------------------------------------------ | ------- |
+| [**Core**](https://github.com/radiantearth/stac-api-spec/tree/release/v1.0.0/core)               | **Yes** |
+| [**Item Search**](https://github.com/radiantearth/stac-api-spec/tree/release/v1.0.0/item-search) | **Yes** |
+
+### STAC API Extensions Support
+
+From [STAC API Extensions](https://stac-api-extensions.github.io/) page :
+
+| Extension                                                                                                                                                             | Support                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**Query**](https://github.com/stac-api-extensions/query)                                                                                                             | **No** - Not intended : _"It is recommended to implement the Filter Extension instead of the Query Extension" [Query Extension homepage](https://github.com/stac-api-extensions/query)_ |
+| [**Sort**](https://github.com/stac-api-extensions/sort)                                                                                                               | **No** - Not intended : Hard to implement in an performant enough manner to be viable with a static catalog                                                                             |
+| [**Transaction**](https://github.com/stac-api-extensions/transaction) and [**Collection Transaction**](https://github.com/stac-api-extensions/collection-transaction) | **No** - Not intended - Feasible                                                                                                                                                        |
+| [**Fields**](https://github.com/stac-api-extensions/fields)                                                                                                           | **No** - Not intended - Feasible                                                                                                                                                        |
+| [**Filter**](https://github.com/stac-api-extensions/filter)                                                                                                           | **Yes**                                                                                                                                                                                 |
+| [**Collection Search**](https://github.com/stac-api-extensions/collection-search)                                                                                     | **Yes**                                                                                                                                                                                 |
+| [**Language**](https://github.com/stac-api-extensions/language)                                                                                                       | **No** - Maybe soon ? - Feasible                                                                                                                                                        |
+
+## Use Cases & Limitations
+
+The appeal of instanciating a STAC API directly on top of a static catalog is obvious. However the performance issue will make or break this project.
+
+Our goal is to provide viable performances on a 500,000 item static catalog.
+
+### Design Choices, Performances and limitations
+
+Inherently, building an API on a 100,000s items static STAC catalog is going to be far slower than on a database backed catalog, however the STAC specs defines constraints (and recommendations) that can be abused to design a performant enough API.
+
+_todo : Include data plots from locust tests on big catalogs._
+
+## Usage
+
+```bash
+make help
+```
+
+See [the Makefile](./Makefile).
+
+### Configuration Options
+
+See [the Settings model](./stac_fastapi/static/api/config.py).
+
+## History
+
+**stac-fastapi-static** is being actively developped at the [OPGC](https://opgc.uca.fr/) an observatory for the sciences of the universe (OSU) belonging to the [CNRS](https://www.cnrs.fr/en) and the [UCA](https://www.uca.fr/) by its main author Pierre Fontbonne [@fntb](https://github.com/fntb). It was originally reverse engineered from the [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) backend by [developmentseed](https://github.com/developmentseed).
+
+## License
+
+[OPEN LICENCE 2.0](./LICENCE.txt)
