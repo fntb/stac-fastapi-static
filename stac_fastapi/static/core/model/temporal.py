@@ -52,7 +52,7 @@ def get_temporal_extent(collection: Collection, assume_extent_spec: bool = True)
 
     if assume_extent_spec:
         try:
-            overall_interval = intervals.pop(0)
+            (overall_interval, intervals) = (intervals[0], intervals[1:])
         except KeyError as error:
             raise BadStacObjectError(
                 "Bad STAC Collection - Bad temporal extent : Empty extent " + str(error)

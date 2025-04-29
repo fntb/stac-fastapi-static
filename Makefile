@@ -86,6 +86,12 @@ else
 catalog_volume = 
 endif
 
+ifdef env_file
+env_file = --env-file ${env_file}
+else
+env_file = 
+endif
+
 .PHONY: run
 run: image
 	docker run \
@@ -94,6 +100,7 @@ run: image
 	--env catalog_href=${catalog_href} \
 	--env environment=prod \
 	--env log_level=WARNING \
+	${env_file} \
 	--volume /tmp:/tmp \
 	${catalog_volume} \
 	--publish ${app_port}:8080 \
