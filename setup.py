@@ -18,8 +18,7 @@ install_requires = [
     "brotli_asgi>=1.4,<2",
     "shapely>=2.0,<3",
     "orjson>=3.10,<4",
-    "pygeofilter[backend-native]",
-    "cql2>=0.3,<1"
+    "cql2>=0.3.6,<1"
 ]
 
 extra_reqs = {

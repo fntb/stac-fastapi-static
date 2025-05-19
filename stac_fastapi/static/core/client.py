@@ -4,14 +4,14 @@ from typing import (
     Any,
     Union,
     Tuple,
-    Dict
+    Dict,
+    Literal
 )
 
 import datetime as datetimelib
 
 from stac_pydantic.shared import BBox
 from stac_pydantic.api.search import Intersection
-from pygeofilter.ast import AstType as CQL2Ast
 
 from stac_pydantic.item_collection import ItemCollection
 from stac_pydantic.item import Item
@@ -77,7 +77,7 @@ def search_items(
     datetime: Optional[Datetime] = None,
     walk_marker: Optional[WalkMarker] = None,
     limit: Optional[int] = 100,
-    filter: Optional[Union[CQL2Ast, Dict]] = None,
+    filter: Optional[Union[str, Dict]] = None,
     *,
     settings: ClientSettings,
     session: Session
@@ -185,7 +185,7 @@ def search_collections(
     limit: Optional[int] = 100,
     bbox: Optional[BBox] = None,
     datetime: Optional[Datetime] = None,
-    filter: Optional[Union[CQL2Ast, Dict]] = None,
+    filter: Optional[Union[str, Dict]] = None,
     *,
     settings: ClientSettings,
     session: Session
@@ -249,7 +249,7 @@ def search_collection_items(
     datetime: Optional[Datetime] = None,
     limit: int = 100,
     walk_marker: Optional[WalkMarker] = None,
-    filter: Optional[Union[CQL2Ast, Dict]] = None,
+    filter: Optional[Union[str, Dict]] = None,
     *,
     settings: ClientSettings,
     session: Session

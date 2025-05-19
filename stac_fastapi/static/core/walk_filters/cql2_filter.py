@@ -14,8 +14,6 @@ from stac_pydantic.item import Item
 from stac_pydantic.collection import Collection
 from stac_pydantic.catalog import Catalog
 
-from pygeofilter.ast import AstType as CQL2Ast
-
 from ..walk import (
     WalkResult,
 )
@@ -28,7 +26,7 @@ from .walk_filter import make_walk_filter, make_walk_filter_factory
 
 from ..model import (
     make_match_collection_cql2,
-    make_match_item_cql2
+    make_match_item_cql2,
 )
 
 
@@ -55,7 +53,7 @@ from ..model import (
 
 
 def make_item_cql2_filter(
-    cql2: Union[CQL2Ast, Dict]
+    cql2: str | Dict
 ) -> Callable[[WalkResult], bool]:
 
     match_cql2 = make_match_item_cql2(cql2)
@@ -70,7 +68,7 @@ def make_item_cql2_filter(
 
 
 def make_collection_cql2_filter(
-    cql2: Union[CQL2Ast, Dict]
+    cql2: str | Dict
 ) -> Callable[[WalkResult], bool]:
 
     match_cql2 = make_match_collection_cql2(cql2)

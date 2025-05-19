@@ -371,17 +371,25 @@ class TestItemSearch(BaseTestAPI):
         item = self.test_catalog.pick_item()
 
         filters = [
-            ("cql2-json", {
-                "op": "a_contains",
-                "args": [{"property": "keywords"}, ['test']]
-            }),
-            ("cql2-json", {
-                "op": "=",
-                "args": [{"property": "id"}, item.id]
-            }),
+            (
+                "cql2-json",
+                {
+                    "op": "a_contains",
+                    "args": [{"property": "keywords"}, ["test"]]
+                },
+                lambda feature: "test" in feature["properties"]["keywords"]
+            ),
+            (
+                "cql2-json",
+                {
+                    "op": "=",
+                    "args": [{"property": "id"}, item.id]
+                },
+                lambda feature: item.id == feature["id"]
+            ),
         ]
 
-        for (lang, expr) in filters:
+        for (lang, expr, test) in filters:
             expr_str = json.dumps(expr) if lang == "cql2-json" else expr
 
             responses = self._fetch(
@@ -392,15 +400,13 @@ class TestItemSearch(BaseTestAPI):
                 }
             )
 
-            match_cql2 = make_match_item_cql2(expr)
-
             for (response, msg) in responses:
                 assert response.status_code == 200, msg
 
                 item_collection = self._validate_item_collection(response.json())
 
                 for item in item_collection.features:
-                    assert match_cql2(item), msg
+                    assert test(item.model_dump()), msg
 
 
 class TestItem(BaseTestAPI):

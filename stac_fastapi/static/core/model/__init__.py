@@ -1,7 +1,7 @@
 
 from .cql2 import (
     make_match_item_cql2,
-    make_match_collection_cql2
+    make_match_collection_cql2,
 )
 
 from .links import (
