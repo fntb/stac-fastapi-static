@@ -9,5 +9,6 @@ __pycache__/
 
 /.vscode
 /Makefile
+/justfile
 /Dockerfile
 /Dockerfile.dockerignore

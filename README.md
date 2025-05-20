@@ -49,10 +49,10 @@ _todo : Include data plots from locust tests on big catalogs._
 ## Usage
 
 ```bash
-make help
+just
 ```
 
-See [the Makefile](./Makefile).
+See [the Justfile](./justfile).
 
 ### Configuration Options
 

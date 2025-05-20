@@ -8,6 +8,7 @@ __pycache__/
 
 /.vscode
 /Makefile
+/justfile
 /docker-compose.yml
 /Dockerfile.test
 /Dockerfile.test.dockerignore
@@ -16,3 +17,4 @@ __pycache__/
 
 /stac_test_tools/
 /test
+/scripts

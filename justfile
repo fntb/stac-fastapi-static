@@ -1,5 +1,8 @@
 set dotenv-load
 
+uid := `id -u`
+gid := `id -g`
+
 default:
   just --list
 
@@ -32,19 +35,19 @@ build-test:
 	docker build --tag fntb/stac-fastapi-static:test -f test.Dockerfile .
 
 # Generates a STAC catalog with roughtly  \`n_items\` items in a subdirectory for testing purposes.
-catalog n_items="1000": build-test
+make-catalog n_items="1000": build-test
 	docker run \
 	--rm \
 	--volume {{justfile_directory()}}:/app \
-	--user $(shell id -u):$(shell id -g) \
-	fntb/stac-fastapi-static:test python stac_test_tools ${n_items}
+	--user {{uid}}:{{gid}} \
+	fntb/stac-fastapi-static:test python scripts/generate_test_catalog.py {{n_items}}
 
 # Runs locust.
 test-load: build build-test
 	log_level=INFO \
 	environment=dev \
-	uid=$(shell id -u) \
-	gid=$(shell id -g) \
+	uid={{uid}} \
+	gid={{gid}} \
 	docker compose run \
 	--rm \
 	--service-ports test
@@ -65,5 +68,5 @@ run catalog_href +docker_args: build
 	--volume /tmp:/tmp \
 	--publish ${app_port}:8000 \
 	{{docker_args}} \
-	fntb/stac-fastapi-static
+	fntb/stac-fastapi-static --port 8000 --host 0.0.0.0 --timeout-keep-alive 30
 
