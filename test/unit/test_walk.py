@@ -30,6 +30,7 @@ from stac_fastapi.static.core import (
     make_walk_pagination_filter,
     make_walk_datetime_filter,
     make_walk_temporal_extent_filter,
+    make_walk_item_cql2_filter,
     walk_collections,
     walk_items
 )
@@ -45,6 +46,9 @@ from stac_fastapi.static.core.walk_filters.temporal_filters import (
 from stac_fastapi.static.core.walk_filters.spatial_filters import (
     make_match_geometry,
     make_match_bbox
+)
+from stac_fastapi.static.core.walk_filters.cql2_filter import (
+    make_match_item_cql2
 )
 
 
@@ -285,3 +289,13 @@ class TestWalk():
 
             assert matched_items == matching_datetime
             assert matched_collections == matching_temporal_extent
+
+    def test_cql2_filter(self):
+        items = self.test_catalog.pick_items()
+
+        for item in items:
+            item.properties["test"] = "test"
+
+            match_cql2 = make_match_item_cql2("test = 'test'")
+
+            assert match_cql2(Item.model_validate(item.to_dict()))

@@ -38,8 +38,7 @@ from stac_fastapi.types.search import (
     str2bbox
 )
 
-from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
-from pygeofilter.ast import AstType as CQL2Ast
+import cql2
 
 from ..core import (
     WalkMarker,
@@ -89,25 +88,26 @@ class PaginationExtension(BaseModel):
 
 
 class FilterExtension(BaseModel):
-    filter: Annotated[Optional[Dict], Field(
+    filter: Annotated[Optional[Dict | str], Field(
         default=None,
         description="A CQL2 filter expression for filtering items.",
         json_schema_extra={
             "example": _filter_example
         },
     )] = None
-    filter_lang: Optional[Literal["cql2-json"]] = "cql2-json"
+    filter_lang: Optional[Literal["cql2-json"] | Literal["cql2-text"]] = "cql2-json"
 
     @field_validator("filter")
     @classmethod
-    def validate_filter(cls, value: Dict) -> CQL2Ast:
+    def validate_filter(cls, value: Dict | str) -> Dict | str:
         if value is not None:
             try:
-                return parse_cql2_json(value)
-            except ValueError as error:
+                cql2.Expr(value)
+            except (ValueError, TypeError, cql2.ValidationError) as error:
                 raise ValueError(
                     f"{json.dumps(value)[:24]}... is not a valid CQL2 json expression : {str(error)}"
                 ) from error
+            return value
 
 
 class SearchItems(Search, PaginationExtension, FilterExtension):

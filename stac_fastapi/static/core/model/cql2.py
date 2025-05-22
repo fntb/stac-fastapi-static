@@ -5,16 +5,7 @@ from typing import (
     Dict
 )
 
-import pygeofilter
-import pygeofilter.backends
-import pygeofilter.backends.cql2_json
-import pygeofilter.parsers
-import pygeofilter.parsers.cql2_text
-import pygeofilter.parsers.cql2_json
-
-from pygeofilter.ast import AstType as CQL2Ast
-
-from pygeofilter.backends.native.evaluate import NativeEvaluator
+import cql2
 
 import json
 
@@ -27,30 +18,35 @@ from ..errors import (
 
 
 def make_match_item_cql2(
-    cql2: Union[CQL2Ast, Dict]
+    filter: str | Dict
 ) -> Callable[[Item], bool]:
 
-    if cql2 is not None:
+    if filter is not None:
         try:
-            cql2_filter_ast = pygeofilter.parsers.cql2_json.parse(cql2)
-        except ValueError as error:
+            expr = cql2.Expr(filter)
+            expr.validate()
+        except (ValueError, TypeError, cql2.ValidationError) as error:
             raise BadStacObjectFilterError(
-                f"Bad CQL2 Expression : Cannot parse cql2 expression : {json.dumps(cql2)}"
+                f"Bad CQL2 Expression : Cannot parse cql2 expression : {json.dumps(filter)}"
             ) from error
 
-        cql2: Callable[[Any], bool] = NativeEvaluator(
-            attribute_map={
-                "id": "id",
-                "geometry": "geometry",
-                "bbox": "bbox",
-                "*": "properties.*"
-            },
-            use_getattr=False
-        ).evaluate(cql2_filter_ast)
-
         def match(item: Item) -> bool:
+            properties_raw = item.properties.model_dump()
+            properties = {
+                property: properties_raw[property] for property in properties_raw.keys() - {
+                    "id",
+                    "geometry",
+                    "bbox",
+                    "start_datetime",
+                    "end_datetime",
+                    "datetime"
+                }
+            }
             try:
-                return cql2(item.model_dump())
+                return expr.matches({
+                    "properties": properties
+
+                })
             except Exception:
                 return False
     else:
@@ -61,28 +57,37 @@ def make_match_item_cql2(
 
 
 def make_match_collection_cql2(
-    cql2: Union[CQL2Ast, Dict]
+    filter: str | Dict
 ) -> Callable[[Collection], bool]:
 
-    if cql2 is not None:
+    if filter is not None:
         try:
-            cql2_filter_ast = pygeofilter.parsers.cql2_json.parse(cql2)
-        except ValueError as error:
+            expr = cql2.Expr(filter)
+            expr.validate()
+        except (ValueError, TypeError, cql2.ValidationError) as error:
             raise BadStacObjectFilterError(
-                f"Bad CQL2 Expression : Cannot parse cql2 expression : {str(error)}"
+                f"Bad CQL2 Expression : Cannot parse cql2 expression : {json.dumps(filter)}"
             ) from error
 
-        cql2: Callable[[Any], bool] = NativeEvaluator(
-            attribute_map={
-                "id": "id",
-                "bbox": "extent.spatial.bbox.0",
-                "*": "*"
-            },
-            use_getattr=False
-        ).evaluate(cql2_filter_ast)
-
         def match(collection: Collection) -> bool:
-            return cql2(collection.model_dump())
+            properties_raw = collection.model_dump()
+            properties = {
+                property: properties_raw[property] for property in properties_raw.keys() - {
+                    "type",
+                    "id",
+                    "stac_version",
+                    "links",
+                    "extent"
+                }
+            }
+
+            try:
+                return expr.matches({
+                    "properties": properties
+
+                })
+            except Exception:
+                return False
     else:
         def match(collection: Collection) -> True:
             return True
