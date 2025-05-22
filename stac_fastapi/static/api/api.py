@@ -57,7 +57,7 @@ from .config import (
     Settings
 )
 
-from ..core.requests import (
+from stac_fastapi.static.core.requests import (
     FileSession,
     is_file_uri,
     file_uri_to_file_path

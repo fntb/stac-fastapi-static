@@ -84,7 +84,7 @@ class Settings(ApiSettings):
     cors_origins: str = "*"
     cors_methods: str = "GET,POST,OPTIONS"
 
-    log_level: str = "WARNING"
+    log_level: str = "warning"
 
     @field_validator("cors_origins")
     def parse_cors_origin(cls, v):

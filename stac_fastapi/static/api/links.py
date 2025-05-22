@@ -18,7 +18,7 @@ from stac_pydantic.links import Link
 from stac_fastapi.types.core import Relations
 from stac_fastapi.types.requests import get_base_url
 
-from ..core import (
+from stac_fastapi.static.core import (
     WalkPage
 )
 

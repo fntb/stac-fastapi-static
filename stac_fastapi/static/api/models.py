@@ -40,7 +40,7 @@ from stac_fastapi.types.search import (
 
 import cql2
 
-from ..core import (
+from stac_fastapi.static.core import (
     WalkMarker,
 )
 

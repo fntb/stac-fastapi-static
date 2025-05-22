@@ -1,72 +1,70 @@
 set dotenv-load
+set export
 
-uid := `id -u`
-gid := `id -g`
+set dotenv-path := ".env"
 
 default:
-  just --list
+	@just --list
 
-# Install dependencies, in a virtual python environment.
-install:
-	test -d .venv || python3 .venv
-	. .venv/bin/activate; \
-	pip install -e .[dev,server]
+uv:
+	@uv -V || echo 'Please install uv: https://docs.astral.sh/uv/getting-started/installation/'
 
-# Starts the server in development mode.
-dev catalog_href=("file://" + justfile_directory() /  "stac_test_catalogs" / "1000"):
-	test -d .venv || python3 .venv
-	. .venv/bin/activate; \
-	log_level=INFO \
-	environment=dev \
-	catalog_href={{catalog_href}} \
-	python -m uvicorn stac_fastapi.static.app:app --port ${app_port} --host ${app_host}
 
-test n_items="1000":
-	test -d .venv || python3 .venv
-	. .venv/bin/activate; \
-	log_level=INFO \
-	environment=dev \
-	n_items={{n_items}} \
-	catalog_href=("file://" + justfile_directory() /  "stac_test_catalogs" / "1000") \
-	pytest -v -s --ignore=stac_test_catalogs
+# Install the dependencies
+install: uv
+	uv sync --frozen --all-extras --all-groups
 
-# Builds the dev docker image, tagged with fntb/stac-fastapi-static:test.
-build-test:
-	docker build --tag fntb/stac-fastapi-static:test -f test.Dockerfile .
-
-# Generates a STAC catalog with roughtly  \`n_items\` items in a subdirectory for testing purposes.
-make-catalog n_items="1000": build-test
-	docker run \
-	--rm \
-	--volume {{justfile_directory()}}:/app \
-	--user {{uid}}:{{gid}} \
-	fntb/stac-fastapi-static:test python scripts/generate_test_catalog.py {{n_items}}
-
-# Runs locust.
-test-load: build build-test
-	log_level=INFO \
-	environment=dev \
-	uid={{uid}} \
-	gid={{gid}} \
-	docker compose run \
-	--rm \
-	--service-ports test
-
-# Builds the prod docker image, tagged with fntb/stac-fastapi-static.
-build:
+# Build the package and containerized server image
+build: uv
+	uv build
 	docker build --tag fntb/stac-fastapi-static .
 
-# Runs the prod docker image.
-run catalog_href +docker_args: build
+# Publish to pypi
+publish: uv
+	uv publish --index testpypi
+
+# Starts the server
+dev catalog_href=("file://" + justfile_directory() /  "stac_test_catalogs/1000/catalog.json"): uv
+	log_level=info \
+	environment=dev \
+	catalog_href={{catalog_href}} \
+	uv run stac_fastapi/static/app.py
+
+# Generates a STAC catalog with roughtly  `n_items` items
+generate-test-catalog n_items="1000": uv
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run scripts/generate_test_catalog.py {{n_items}}
+
+test n_items="1000": uv
+	log_level=info \
+	environment=dev \
+	n_items={{n_items}} \
+	catalog_href={{justfile_directory()}}/stac_test_catalogs/{{n_items}}/catalog.json \
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest -v -s --ignore=stac_test_catalogs
+
+# Runs the containerized server
+run catalog_href *docker_args: build
 	docker run \
 	--detach \
 	--restart unless-stopped \
-	--env catalog_href=${catalog_href} \
 	--env environment=prod \
-	--env log_level=WARNING \
-	--env-file=.env \
+	--env log_level=warning \
+	--env catalog_href={{catalog_href}} \
 	--volume /tmp:/tmp \
-	--publish ${app_port}:8000 \
 	{{docker_args}} \
-	fntb/stac-fastapi-static --port 8000 --host 0.0.0.0 --timeout-keep-alive 30
+	fntb/stac-fastapi-static
 
+clean:
+	@rm -rf `find . -name __pycache__`
+	@rm -f `find . -type f -name '*.py[co]'`
+	@rm -f `find . -type f -name '*~'`
+	@rm -f `find . -type f -name '.*~'`
+	@rm -rf .cache
+	@rm -rf .pytest_cache
+	@rm -rf .ruff_cache
+	@rm -rf htmlcov
+	@rm -rf *.egg-info
+	@rm -f .coverage
+	@rm -f .coverage.*
+	@rm -rf build
+	@rm -rf dist
+	@rm -rf coverage.xml

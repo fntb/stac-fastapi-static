@@ -15,14 +15,13 @@ except ValidationError as error:
     exit(2)
 
 logging.basicConfig(
-    level=settings.log_level
+    level=settings.log_level.upper()
 )
 
 app = make_api(settings).app
 
 
-def run():
-    """Run app from command line using uvicorn if available."""
+def main():
     try:
         import uvicorn
 
@@ -32,7 +31,7 @@ def run():
             port=settings.app_port,
             log_level=settings.log_level,
             reload=settings.reload,
-            root_path=os.getenv("UVICORN_ROOT_PATH", ""),
+            root_path=settings.root_path,
         )
     except ImportError as e:
         raise RuntimeError(
@@ -40,4 +39,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    main()

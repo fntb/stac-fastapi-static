@@ -31,7 +31,7 @@ from pydantic import BaseModel, ValidationError
 
 from .config import Settings
 
-from ..core import (
+from stac_fastapi.static.core import (
     WalkResult,
     walk_collections,
     make_walk_depth_filter,
@@ -39,13 +39,13 @@ from ..core import (
     BadWalkResultError
 )
 
-from ..core.requests import (
+from stac_fastapi.static.core.requests import (
     Session,
     file_uri_to_file_path,
     is_file_uri
 )
 
-from ..core.client import (
+from stac_fastapi.static.core.client import (
     search_items as _search_items,
     search_collections as _search_collections,
     search_collection_items as _search_collection_items,
