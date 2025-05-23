@@ -16,12 +16,25 @@ install: uv
 
 # Build the package and containerized server image
 build: uv
+	#!/usr/bin/bash
+	version=`echo "from stac_fastapi.static.__about__ import __version__; print(__version__)" | uv run --no-project -`
 	uv build
-	docker build --tag fntb/stac-fastapi-static .
+	docker build \
+	--tag ghcr.io/fntb/stac-fastapi-static:latest \
+	--tag ghcr.io/fntb/stac-fastapi-static:${version} \
+	--label "org.opencontainers.image.source=https://github.com/fntb/stac-fastapi-static" \
+	--label "org.opencontainers.image.description=An implementation of STAC API based on the FastAPI framework using a static catalog as backend." \
+	--label "org.opencontainers.image.licenses=etalab-2.0" \
+	.
 
 # Publish to pypi
-publish: uv
-	uv publish --index testpypi
+publish-pypi: uv
+	uv publish
+#	uv publish --index testpypi
+
+# Publish to ghcr
+publish-ghcr:
+	docker push ghcr.io/fntb/stac-fastapi-static:latest
 
 # Starts the server
 dev catalog_href=("file://" + justfile_directory() /  "stac_test_catalogs/1000/catalog.json"): uv
@@ -42,18 +55,24 @@ test n_items="1000": uv
 	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest -v -s --ignore=stac_test_catalogs
 
 # Runs the containerized server
-run catalog_href *docker_args: build
+run catalog_href *docker_args:
 	docker run \
-	--detach \
-	--restart unless-stopped \
+	--env-file .env \
+	--env app_port=${app_port:-8000} \
 	--env environment=prod \
 	--env log_level=warning \
 	--env catalog_href={{catalog_href}} \
 	--volume /tmp:/tmp \
+	--publish ${app_port:-8000}:${app_port:-8000} \
 	{{docker_args}} \
-	fntb/stac-fastapi-static
+	ghcr.io/fntb/stac-fastapi-static
+
+
+#	--detach \
+#	--restart unless-stopped \
 
 clean:
+	@docker image remove ghcr.io/fntb/stac-fastapi-static
 	@rm -rf `find . -name __pycache__`
 	@rm -f `find . -type f -name '*.py[co]'`
 	@rm -f `find . -type f -name '*~'`

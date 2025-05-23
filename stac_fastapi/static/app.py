@@ -1,5 +1,6 @@
 import logging
 import os
+from pprint import pprint as print
 
 from pydantic import ValidationError
 
@@ -24,6 +25,8 @@ app = make_api(settings).app
 def main():
     try:
         import uvicorn
+
+        print(settings.model_dump())
 
         uvicorn.run(
             "stac_fastapi.static.app:app",

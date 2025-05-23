@@ -48,15 +48,68 @@ _todo : Include data plots from locust tests on big catalogs._
 
 ## Usage
 
+### Prefered Method : Containerized API Server
+
 ```bash
-just
+docker run \
+	--env-file .env \
+	--env app_port=8000 \
+	--env environment=prod \
+	--env log_level=warning \
+	--env catalog_href=<catalog_url> \
+	--volume /tmp:/tmp \
+	--publish 8000:8000 \
+	ghcr.io/fntb/stac-fastapi-static: latest
 ```
 
-See [the Justfile](./justfile).
+Note :
+
+- `--volume <path-to-catalog-directory>:/app/catalog/` and `--env catalog_href=file:///app/catalog/catalog.json` to serve a local catalog
+- See [the Justfile](./justfile).
+
+### Alternative Method : Python Packaged API Server
+
+Install, create a `dotenv` configuration file (or pass configuration options as env variables), and run :
+
+```bash
+pip install stac-fastapi-static
+
+# either
+touch .env
+stac-fastapi-static
+
+# or
+<option>=<value> stac-fastapi-static
+```
 
 ### Configuration Options
 
 See [the Settings model](./stac_fastapi/static/api/config.py).
+
+Amongst other :
+
+```python
+class Settings(ApiSettings):
+    # https://docs.pydantic.dev/latest/concepts/pydantic_settings/
+
+    ...
+
+    app_host: str = "0.0.0.0"
+    app_port: int = 8000
+    root_path: str = ""
+
+    ...
+```
+
+### Test and Develop
+
+```bash
+just --list
+```
+
+Or see [the Justfile](./justfile).
+
+Release checklist : bump [version](./stac_fastapi/static/__about__.py), build, commit, tag, push, publish to pypi and ghcr.
 
 ## History
 

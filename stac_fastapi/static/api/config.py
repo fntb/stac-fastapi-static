@@ -1,13 +1,12 @@
 from typing import (
     Literal,
-    Union
+    Union,
+    List
 )
 
 from pydantic import (
     field_validator,
     PositiveInt,
-    HttpUrl,
-    FileUrl,
     Field
 )
 
@@ -19,12 +18,35 @@ from stac_fastapi.types.config import ApiSettings
 class Settings(ApiSettings):
     # https://docs.pydantic.dev/latest/concepts/pydantic_settings/
 
+    # --- Inherited from ApiSettings, repeated for documentation ---
+
+    stac_fastapi_title: str = "stac-fastapi"
+    stac_fastapi_description: str = "stac-fastapi"
+    stac_fastapi_version: str = "0.1"
+    stac_fastapi_landing_id: str = "stac-fastapi"
+
+    app_host: str = "0.0.0.0"
+    app_port: int = 8000
+    reload: bool = True
+
+    # Enable Pydantic validation for output Response
+    enable_response_models: bool = False
+
+    # Enable direct `Response` from endpoint, skipping validation and serialization
+    enable_direct_response: bool = False
+
+    openapi_url: str = "/api"
+    docs_url: str = "/api.html"
+    root_path: str = ""
+
+    # --- Custom Settings ---
+
     environment: Literal["dev", "prod"] = Field(
         "prod",
         description="In dev mode python errors returned from the API are not sanitized and may expose secrets."
     )
 
-    catalog_href: Union[HttpUrl, FileUrl] = Field(
+    catalog_href: Union[str] = Field(
         description=(
             "Url of the static STAC catalog to expose."
             " `file://` and `http(s)://` schemes are supported for locally or remotely hosted catalogs."
@@ -81,20 +103,10 @@ class Settings(ApiSettings):
         )
     )
 
-    cors_origins: str = "*"
-    cors_methods: str = "GET,POST,OPTIONS"
+    cors_origins: List[str] = ["*"]
+    cors_methods: List[str] = ["GET", "POST", "OPTIONS"]
 
     log_level: str = "warning"
-
-    @field_validator("cors_origins")
-    def parse_cors_origin(cls, v):
-        """Parse CORS origins."""
-        return [origin.strip() for origin in v.split(",")]
-
-    @field_validator("cors_methods")
-    def parse_cors_methods(cls, v):
-        """Parse CORS methods."""
-        return [method.strip() for method in v.split(",")]
 
     model_config = SettingsConfigDict(
         **{**ApiSettings.model_config, **{"env_nested_delimiter": "__"}}

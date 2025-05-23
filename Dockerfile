@@ -20,14 +20,14 @@ WORKDIR /app
 
 RUN mkdir -p stac_fastapi/static/api stac_fastapi/static/core/compat stac_fastapi/static/core/lib stac_fastapi/static/core/model stac_fastapi/static/core/requests stac_fastapi/static/core/walk_filters
 
-COPY ./README.md .
-COPY ./LICENCE.txt .
-COPY ./pyproject.toml .
+COPY ./README.md ./README.md
+COPY ./LICENCE.txt ./LICENCE.txt
+COPY ./pyproject.toml ./pyproject.toml
 COPY ./stac_fastapi/static/__about__.py ./stac_fastapi/static/__about__.py
 
 RUN uv sync --no-install-project
 
-COPY ./stac_fastapi .
+COPY ./stac_fastapi ./stac_fastapi
 
 RUN uv sync
 
