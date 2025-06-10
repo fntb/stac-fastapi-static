@@ -9,6 +9,7 @@ from typing import (
 
 import cql2
 import orjson
+import logging
 
 from stac_pydantic.item import Item
 from stac_pydantic.collection import Collection
@@ -29,6 +30,7 @@ from ..model import (
     make_match_item_cql2,
 )
 
+logger = logging.getLogger(__name__)
 
 # def parse_cql2_str(
 #     cql2_expr: str | dict[str, Any],
@@ -60,7 +62,14 @@ def make_item_cql2_filter(
 
     def filter(walk_result: WalkResult) -> bool:
         if walk_result.type is Item:
-            return match_cql2(walk_result.resolve())
+            try:
+                return match_cql2(walk_result.resolve())
+            except Exception as error:
+                logger.warning(f"Skipping walk_result (not branch) : {str(walk_result)} : {str(error)}", extra={
+                    "error": error
+                })
+
+                return False
         else:
             return True
 
@@ -78,7 +87,14 @@ def make_collection_cql2_filter(
             walk_result.resolve()
 
         if walk_result.type is Collection:
-            return match_cql2(walk_result.resolve())
+            try:
+                return match_cql2(walk_result.resolve())
+            except Exception as error:
+                logger.warning(f"Skipping walk_result : {str(walk_result)} : {str(error)}", extra={
+                    "error": error
+                })
+
+                return False
         else:
             return True
 

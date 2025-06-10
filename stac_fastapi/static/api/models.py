@@ -10,11 +10,14 @@ from typing import (
     Literal,
     Type,
     TypeVar,
-    Generic
+    Generic,
+    Any,
+    Dict
 )
 
 import datetime as datetimelib
 import json
+import orjson
 
 from functools import cached_property
 
@@ -24,7 +27,9 @@ from pydantic import (
     Field,
     PrivateAttr,
     field_validator,
-    ValidationInfo
+    model_validator,
+    ValidationInfo,
+    ValidationError
 )
 
 
@@ -95,19 +100,39 @@ class FilterExtension(BaseModel):
             "example": _filter_example
         },
     )] = None
-    filter_lang: Optional[Literal["cql2-json"] | Literal["cql2-text"]] = "cql2-json"
+    filter_lang: Optional[Literal["cql2-json"] | Literal["cql2-text"]] = Field(
+        "cql2-json",
+        alias="filter-lang",
+        description="The CQL filter encoding that the 'filter' value uses.",
+    )
 
-    @field_validator("filter")
+    @model_validator(mode='before')
     @classmethod
-    def validate_filter(cls, value: Dict | str) -> Dict | str:
-        if value is not None:
+    def validate_filter(cls, data: Any) -> Any:
+        if not isinstance(data, Dict):
+            return data
+
+        filter_lang = data.get("filter-lang", "cql2-json")
+        filter_expr = data.get("filter", None)
+
+        if filter_lang not in ["cql2-json", "cql2-text"]:
+            return data
+
+        if filter_lang == "cql2-json" and isinstance(filter_expr, str):
+            filter_expr = orjson.loads(filter_expr)
+
+        if filter_expr is not None:
             try:
-                cql2.Expr(value)
+                cql2.Expr(filter_expr)
             except (ValueError, TypeError, cql2.ValidationError) as error:
-                raise ValueError(
-                    f"{json.dumps(value)[:24]}... is not a valid CQL2 json expression : {str(error)}"
+                raise ValidationError(
+                    f"{json.dumps(filter_expr)[:24]}... is not a valid CQL2 json expression : {str(error)}"
                 ) from error
-            return value
+
+        data["filter-lang"] = filter_lang
+        data["filter"] = filter_expr
+
+        return data
 
 
 class SearchItems(Search, PaginationExtension, FilterExtension):

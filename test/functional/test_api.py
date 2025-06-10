@@ -387,6 +387,11 @@ class TestItemSearch(BaseTestAPI):
                 },
                 lambda feature: item.id == feature["id"]
             ),
+            (
+                "cql2-text",
+                f"id = '{item.id}'",
+                lambda feature: item.id == feature["id"]
+            ),
         ]
 
         for (lang, expr, test) in filters:
@@ -396,7 +401,7 @@ class TestItemSearch(BaseTestAPI):
                 f"filter={expr_str}&filter-lang={lang}",
                 {
                     "filter": expr,
-                    "filter_lang": lang
+                    "filter-lang": lang
                 }
             )
 

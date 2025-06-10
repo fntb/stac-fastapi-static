@@ -6,7 +6,7 @@ from typing import (
 )
 
 import cql2
-
+import datetime
 import json
 
 from stac_pydantic.item import Item
@@ -15,6 +15,14 @@ from stac_pydantic.collection import Collection
 from ..errors import (
     BadStacObjectFilterError
 )
+
+
+def _sanitize_date_property(value: Any) -> Any:
+    # The cql2 lirbary does not support dates
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return None
+    else:
+        return value
 
 
 def make_match_item_cql2(
@@ -33,7 +41,7 @@ def make_match_item_cql2(
         def match(item: Item) -> bool:
             properties_raw = item.properties.model_dump()
             properties = {
-                property: properties_raw[property] for property in properties_raw.keys() - {
+                property: _sanitize_date_property(properties_raw[property]) for property in properties_raw.keys() - {
                     "id",
                     "geometry",
                     "bbox",
@@ -42,13 +50,11 @@ def make_match_item_cql2(
                     "datetime"
                 }
             }
-            try:
-                return expr.matches({
-                    "properties": properties
 
-                })
-            except Exception:
-                return False
+            return expr.matches({
+                "properties": properties
+
+            })
     else:
         def match(item: Item) -> True:
             return True
@@ -72,7 +78,7 @@ def make_match_collection_cql2(
         def match(collection: Collection) -> bool:
             properties_raw = collection.model_dump()
             properties = {
-                property: properties_raw[property] for property in properties_raw.keys() - {
+                property: _sanitize_date_property(properties_raw[property]) for property in properties_raw.keys() - {
                     "type",
                     "id",
                     "stac_version",

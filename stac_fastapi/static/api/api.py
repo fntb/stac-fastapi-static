@@ -39,6 +39,7 @@ from stac_fastapi.api.models import (
 from requests import Session
 from requests_cache import CachedSession
 import xxhash
+import orjson
 
 from .config import Settings
 from .core_client import CoreClient
@@ -135,7 +136,8 @@ def make_api(settings: Settings):
         extensions=extensions,
         client=CoreClient(),
         response_class=ORJSONResponse,
-        search_post_request_model=create_post_request_model(search_extensions),
+        # search_post_request_model=create_post_request_model(search_extensions),
+        search_post_request_model=SearchItems,
         search_get_request_model=create_get_request_model(search_extensions),
         items_get_request_model=create_request_model(
             model_name="ItemCollectionUri",
@@ -170,6 +172,11 @@ def make_api(settings: Settings):
                         include_url=False,
                         include_input=True
                     )
+                elif error.detail is not None:
+                    try:
+                        orjson.dumps(error.detail)
+                    except Exception:
+                        error.detail = str(error.detail)
 
             return await http_exception_handler(request, error)
 

@@ -235,7 +235,7 @@ class CoreClient(BaseCoreClient):
 
     def post_search(
         self,
-        kwargs: BaseModel,
+        kwargs: SearchItems,
         request: Request,
         **_kwargs
     ) -> stac.ItemCollection:
@@ -250,26 +250,9 @@ class CoreClient(BaseCoreClient):
             ItemCollection containing items which match the search criteria.
         """
 
-        kwargs = kwargs.model_dump()
-
-        try:
-            query = SearchItems(
-                filter=kwargs["filter_expr"],
-                filter_lang="cql2-json",
-                token=kwargs["token"],
-                collections=kwargs["collections"],
-                ids=kwargs["ids"],
-                bbox=kwargs["bbox"],
-                intersects=kwargs["intersects"],
-                datetime=kwargs["datetime"],
-                limit=kwargs["limit"],
-            )
-        except (ValidationError, JSONDecodeError) as error:
-            raise HTTPException(status_code=400, detail=error) from error
-
         return self._search(
             request=request,
-            query=query
+            query=kwargs
         )
 
     def get_search(
@@ -287,8 +270,10 @@ class CoreClient(BaseCoreClient):
 
         try:
             query = SearchItems(
-                filter=orjson.loads(kwargs["filter_expr"]) if kwargs["filter_expr"] else None,
-                filter_lang="cql2-json",
+                filter=kwargs["filter_expr"],
+                **{
+                    "filter-lang": kwargs["filter_lang"]
+                },
                 token=kwargs["token"],
                 collections=kwargs["collections"],
                 ids=kwargs["ids"],
@@ -358,8 +343,10 @@ class CoreClient(BaseCoreClient):
 
         try:
             query = SearchCollections(
-                filter=orjson.loads(kwargs["filter_expr"]) if kwargs["filter_expr"] else None,
-                filter_lang="cql2-json",
+                filter=kwargs["filter_expr"],
+                **{
+                    "filter-lang": kwargs["filter_lang"]
+                },
                 token=kwargs["token"],
                 bbox=kwargs["bbox"],
                 datetime=kwargs["datetime"],
@@ -464,11 +451,12 @@ class CoreClient(BaseCoreClient):
 
         try:
             query = SearchCollectionItems(
-                filter=orjson.loads(kwargs["filter_expr"]) if kwargs["filter_expr"] else None,
-                filter_lang="cql2-json",
+                filter=kwargs["filter_expr"],
+                **{
+                    "filter-lang": kwargs["filter_lang"]
+                },
                 token=kwargs["token"],
                 bbox=kwargs["bbox"],
-                # intersects=orjson.loads(kwargs["intersects"]) if kwargs["intersects"] else None,
                 datetime=kwargs["datetime"],
                 limit=kwargs["limit"],
                 collection_id=kwargs["collection_id"]

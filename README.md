@@ -59,7 +59,7 @@ docker run \
 	--env catalog_href=<catalog_url> \
 	--volume /tmp:/tmp \
 	--publish 8000:8000 \
-	ghcr.io/fntb/stac-fastapi-static: latest
+	ghcr.io/fntb/stac-fastapi-static:latest
 ```
 
 Note :
