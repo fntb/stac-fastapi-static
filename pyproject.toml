@@ -46,7 +46,7 @@ dependencies = [
 
 [dependency-groups]
 
-dev = ["pytest", "pystac", "numpy>=1.7,<3", "httpx"]
+dev = ["pytest", "pystac", "numpy>=1.7,<3", "httpx", "pystac_client"]
 
 [project.scripts]
 stac-fastapi-static = "stac_fastapi.static.app:main"

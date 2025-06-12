@@ -5,7 +5,6 @@ import pytest
 
 from test.conftest import (
     rfc3339,
-    BaseTestAPI,
 )
 
 from test.performance.conftest import (
@@ -19,7 +18,7 @@ execution_number = 1
 
 @pytest.mark.skip("Obsolete")
 @pytest.mark.perf
-class TestAPIPerfs(BaseTestAPI):
+class TestAPIPerfs():
 
     def time_get(self, url: str):
         start = time.time()

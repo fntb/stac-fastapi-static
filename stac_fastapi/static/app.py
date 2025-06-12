@@ -36,9 +36,8 @@ def main():
             reload=settings.reload,
             root_path=settings.root_path,
         )
-    except ImportError as e:
-        raise RuntimeError(
-            "Uvicorn must be installed in order to use command") from e
+    except ImportError as error:
+        raise RuntimeError("Uvicorn must be installed") from error
 
 
 if __name__ == "__main__":

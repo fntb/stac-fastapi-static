@@ -47,12 +47,11 @@ dev catalog_href=("file://" + justfile_directory() /  "stac_test_catalogs/1000/c
 generate-test-catalog n_items="1000": uv
 	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run scripts/generate_test_catalog.py {{n_items}}
 
-test n_items="1000": uv
+test catalog_href api_href="": uv
 	log_level=info \
 	environment=dev \
-	n_items={{n_items}} \
-	catalog_href={{justfile_directory()}}/stac_test_catalogs/{{n_items}}/catalog.json \
-	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest -v -s --ignore=stac_test_catalogs
+	catalog_href={{catalog_href}} \
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest -v -s --ignore=stac_test_catalogs --target {{api_href}}
 
 # Runs the containerized server
 run catalog_href *docker_args:
