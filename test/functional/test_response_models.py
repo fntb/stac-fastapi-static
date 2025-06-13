@@ -52,7 +52,7 @@ def test_get_item_search_response_model(api_base_href: str):
 
 
 def test_post_item_search_response_model(api_base_href: str):
-    response = requests.post(urljoin(api_base_href, "/search"))
+    response = requests.post(urljoin(api_base_href, "/search"), json={})
 
     response.raise_for_status()
 

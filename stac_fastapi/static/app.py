@@ -18,6 +18,7 @@ except ValidationError as error:
 logging.basicConfig(
     level=settings.log_level.upper()
 )
+logger = logging.getLogger(__name__)
 
 app = make_api(settings).app
 
@@ -26,14 +27,18 @@ def main():
     try:
         import uvicorn
 
-        print(settings.model_dump())
+        if settings.reload and settings.environment != "prod":
+            settings.reload = False
+            logger.warning("Overriding reload setting in non-'prod' environment")
+
+        logger.warning("Settings : %s", settings.model_dump())
 
         uvicorn.run(
             "stac_fastapi.static.app:app",
             host=settings.app_host,
             port=settings.app_port,
             log_level=settings.log_level,
-            reload=settings.reload,
+            reload=settings.reload if not settings.environment == "prod" else False,
             root_path=settings.root_path,
         )
     except ImportError as error:

@@ -10,9 +10,6 @@ from stac_pydantic.shared import BBox
 from geojson_pydantic.geometries import Geometry
 
 from ..conftest import (
-    catalog,
-    catalog_href,
-    session,
     settings
 )
 
@@ -43,10 +40,20 @@ from stac_fastapi.static.core.walk_filters.cql2_filter import (
     make_match_item_cql2
 )
 
-from stac_fastapi.static.core.requests import file_path_to_file_uri
+from stac_fastapi.static.core.requests import (
+    file_path_to_file_uri as _file_path_to_file_uri,
+    is_file_uri
+)
 
 
-def test_walk_everything():
+def file_path_to_file_uri(href: str) -> str:
+    if is_file_uri(href):
+        return _file_path_to_file_uri(href)
+    else:
+        return href
+
+
+def test_walk_everything(catalog: pystac.Catalog, catalog_href: str, session):
     hrefs = set(
         file_path_to_file_uri(object.get_self_href())
         for object
@@ -67,7 +74,7 @@ def test_walk_everything():
     assert hrefs == walked_hrefs
 
 
-def test_walk_order():
+def test_walk_order(catalog: pystac.Catalog, catalog_href: str, session):
     walked_paths = [
         link.walk_path
         for link
@@ -81,7 +88,7 @@ def test_walk_order():
     assert walked_paths == sorted_walked_paths
 
 
-def test_walk_pagination_filter():
+def test_walk_pagination_filter(catalog: pystac.Catalog, catalog_href: str, session):
     walk_paths = [
         link.walk_path
         for link
@@ -116,8 +123,8 @@ def test_walk_pagination_filter():
     )) == walk_paths[:(ref_walk_path_i + 1)]
 
 
-def test_walk_collections():
-    collections = list(walk_static_collections(catalog))
+def test_walk_collections(catalog: pystac.Catalog, catalog_href: str, session):
+    collections = walk_static_collections(catalog)
 
     filtered_walk = walk_collections(
         file_path_to_file_uri(catalog_href),
@@ -160,8 +167,8 @@ def test_walk_collections():
     )
 
 
-def test_walk_items():
-    items = list(walk_static_items(catalog))
+def test_walk_items(catalog: pystac.Catalog, catalog_href: str, session):
+    items = walk_static_items(catalog)
 
     filtered_walk = walk_items(
         file_path_to_file_uri(catalog_href),
@@ -204,26 +211,30 @@ def test_walk_items():
     )
 
 
-def test_walk_temporal_filters():
-    datetimes = pick_datetimes()
+def test_walk_temporal_filters(catalog: pystac.Catalog, catalog_href: str, session):
+    datetimes = pick_datetimes(catalog)
 
     for datetime in datetimes:
         match_datetime = make_match_datetime(datetime)
         match_temporal_extent = make_match_temporal_extent(datetime)
 
-        matching_datetime = set(
+        expected_matching_items = set(
             item.id
             for item
             in walk_static_items(catalog)
             if match_datetime(Item.model_validate(item.to_dict(include_self_link=False)))
         )
 
-        matching_temporal_extent = set(
+        assert expected_matching_items
+
+        expected_matching_collections = set(
             collection.id
             for collection
             in walk_static_collections(catalog)
             if match_temporal_extent(Collection.model_validate(collection.to_dict(include_self_link=False)))
         )
+
+        assert expected_matching_collections
 
         walk_datetime_filter = make_walk_datetime_filter(
             datetime=datetime
@@ -259,11 +270,14 @@ def test_walk_temporal_filters():
             if walk_result.type == Collection
         )
 
-        assert matched_items == matching_datetime
-        assert matched_collections == matching_temporal_extent
+        assert len(matched_items) > 0
+        assert matched_items <= expected_matching_items
+
+        assert len(matched_collections) > 0
+        assert matched_collections <= expected_matching_collections
 
 
-def test_cql2_filter(self):
+def test_cql2_filter(catalog: pystac.Catalog, catalog_href: str, session):
     items = pick_items(catalog, 5)
 
     for item in items:

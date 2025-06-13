@@ -3,11 +3,11 @@ import shapely
 
 import pytest
 
-from test.conftest import (
+from ..rfc3339 import (
     rfc3339,
 )
 
-from test.performance.conftest import (
+from .conftest import (
     Perfs
 )
 

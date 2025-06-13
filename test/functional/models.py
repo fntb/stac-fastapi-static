@@ -8,7 +8,7 @@ import json
 
 import pystac
 
-from stac_pydantic import Item, Collection
+from stac_pydantic import Item, Collection, ItemCollection
 from stac_pydantic.links import Links
 
 
@@ -86,5 +86,20 @@ def normalize_collection(collection: pystac.Collection, base_url: Optional[str] 
     return collection
 
 
-def validate_item_collection():
-    raise NotImplementedError
+def validate_item_collection(item_collection: str | Dict | Item | pystac.ItemCollection) -> pystac.ItemCollection:
+
+    if isinstance(item_collection, str):
+        try:
+            item_collection = json.loads(item_collection)
+        except json.JSONDecodeError as error:
+            raise ValueError("Malformed ItemCollection JSON") from error
+
+        item_collection = pystac.ItemCollection.from_dict(item_collection)
+    elif isinstance(item_collection, ItemCollection):
+        item_collection = pystac.ItemCollection.from_dict(item_collection.model_dump())
+    elif isinstance(item_collection, Dict):
+        item_collection = pystac.ItemCollection.from_dict(item_collection)
+    elif not isinstance(item_collection, pystac.ItemCollection):
+        raise TypeError(f"Unexpected 'ItemCollection' object type : {type(item_collection)}")
+
+    return item_collection

@@ -6,7 +6,8 @@ from typing import (
     cast,
     List,
     Dict,
-    Any
+    Any,
+    Optional
 )
 
 import random
@@ -25,28 +26,36 @@ def walk_items(catalog: pystac.Catalog | pystac_client.Client) -> Iterator[pysta
     if isinstance(catalog, (pystac.Catalog, pystac.Collection, pystac.Item)):
         yield from _walk_catalog_items(catalog)
     else:
-        raise NotImplementedError("Cannot walk an STAC API")
+        raise NotImplementedError("Cannot walk a STAC API")
 
 
 def walk_collections(catalog: pystac.Catalog | pystac_client.Client) -> Iterator[pystac.Catalog | pystac.Collection]:
     if isinstance(catalog, (pystac.Catalog, pystac.Collection, pystac.Item)):
-        yield from _walk_catalog_collections(catalog)
+        walk = _walk_catalog_collections(catalog)
     else:
-        raise NotImplementedError("Cannot walk an STAC API")
+        raise NotImplementedError("Cannot walk a STAC API")
+
+    for collection in walk:
+        if collection != catalog:
+            yield collection
 
 
 def random_walk_items(catalog: pystac.Catalog | pystac_client.Client) -> Iterator[pystac.Item]:
     if isinstance(catalog, (pystac.Catalog, pystac.Collection, pystac.Item)):
         yield from _random_walk_catalog_items(catalog)
     else:
-        raise NotImplementedError("Cannot walk an STAC API")
+        raise NotImplementedError("Cannot walk a STAC API")
 
 
 def random_walk_collections(catalog: pystac.Catalog | pystac_client.Client) -> Iterator[pystac.Catalog | pystac.Collection]:
     if isinstance(catalog, (pystac.Catalog, pystac.Collection, pystac.Item)):
-        yield from _random_walk_catalog_collections(catalog)
+        walk = _random_walk_catalog_collections(catalog)
     else:
-        raise NotImplementedError("Cannot walk an STAC API")
+        raise NotImplementedError("Cannot walk a STAC API")
+
+    for collection in walk:
+        if collection != catalog:
+            yield collection
 
 
 def _walk_catalog_items(catalog: pystac.Catalog) -> Iterator[pystac.Item]:
@@ -80,10 +89,12 @@ def _random_walk_catalog_items(catalog: pystac.Catalog) -> Iterator[pystac.Item]
 
 def _random_walk_catalog_collections(catalog: pystac.Catalog) -> Iterator[pystac.Catalog | pystac.Collection]:
     def pick_next_state(state: pystac.Catalog | pystac.Collection) -> pystac.Catalog | pystac.Collection:
+        rels = ["parent", "child"] if state != catalog else ["child"]
+
         next_state_candidate_links = [
             link
             for link in state.links
-            if link.rel in ["parent", "child"]
+            if link.rel in rels
         ]
 
         next_state_link = random.choice(next_state_candidate_links)

@@ -14,6 +14,11 @@ from pydantic_settings import SettingsConfigDict
 
 from stac_fastapi.types.config import ApiSettings
 
+from stac_fastapi.static.core.requests import (
+    is_file_uri,
+    file_path_to_file_uri
+)
+
 
 class Settings(ApiSettings):
     # https://docs.pydantic.dev/latest/concepts/pydantic_settings/
@@ -55,7 +60,10 @@ class Settings(ApiSettings):
 
     @field_validator("catalog_href", mode="after")
     def catalog_href_to_str(cls, value):
-        return str(value)
+        if is_file_uri(value):
+            return file_path_to_file_uri(value)
+        else:
+            return value
 
     landing_page_child_collections_max_depth: PositiveInt = Field(
         2,
