@@ -15,7 +15,7 @@ from stac_pydantic.shared import BBox
 from geojson_pydantic.geometries import Geometry
 
 
-from stac_test_tools import (
+from .stac_generator import (
     generate_item,
     generate_collection
 )

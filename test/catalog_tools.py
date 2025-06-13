@@ -7,7 +7,8 @@ from typing import (
     List,
     Dict,
     Any,
-    Optional
+    Optional,
+    Callable
 )
 
 import random
@@ -122,47 +123,37 @@ def pick_collections(catalog: pystac.Catalog | pystac_client.Client, n: int = 1)
     return list(islice(random_walk_collections(catalog), n))
 
 
-def pick_bbox(catalog: pystac.Catalog | pystac_client.Client) -> shapely.Geometry:
+def pick_bbox(catalog: pystac.Catalog | pystac_client.Client) -> shapely.Polygon:
     item = pick_item(catalog)
 
-    return shapely.box(*item.bbox)
+    if item.bbox:
+        bbox = shapely.geometry.box(*item.bbox)
+    else:
+        bbox = shapely.geometry.box(shapely.geometry.shape(item.geometry).bounds)
+
+    return bbox
 
 
 def pick_geometry(catalog: pystac.Catalog | pystac_client.Client) -> shapely.Geometry:
     item = pick_item(catalog)
 
-    return shapely.geometry.shape(item.geometry)
-
-
-def _fromisoformat(datetime_s: str) -> datetime.datetime:
-    if not datetime_s.endswith("Z"):
-        return datetime.datetime.fromisoformat(datetime_s)
+    if item.bbox:
+        geometry = shapely.geometry.box(*item.bbox)
     else:
-        return datetime.datetime.fromisoformat(datetime_s.rstrip("Z") + "+00:00")
+        geometry = shapely.geometry.shape(item.geometry)
+
+    return geometry
 
 
 def pick_datetimes(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[Tuple[None | datetime.datetime, None | datetime.datetime]]:
-    items = (pick_item(catalog), pick_item(catalog))
+    item = pick_item(catalog)
 
-    start_datetime = min(
-        _fromisoformat(
-            item.properties.get(
-                "start_datetime", item.datetime and item.datetime.isoformat()
-            )
-        )
-        for item
-        in items
-    )
-
-    end_datetime = max(
-        _fromisoformat(
-            item.properties.get(
-                "end_datetime", item.datetime and item.datetime.isoformat()
-            )
-        )
-        for item
-        in items
-    )
+    if item.datetime:
+        start_datetime = item.datetime - datetime.timedelta(days=1)
+        end_datetime = item.datetime + datetime.timedelta(days=1)
+    else:
+        start_datetime = item.properties.get("start_datetime") - datetime.timedelta(days=1)
+        end_datetime = item.properties.get("end_datetime") + datetime.timedelta(days=1)
 
     return (
         (None, None),
@@ -173,7 +164,7 @@ def pick_datetimes(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[Tupl
     )
 
 
-def pick_cql2_filters(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[str, Dict]:
+def pick_cql2_filters(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[str, Dict, Callable[[pystac.Item], bool]]:
     item = pick_item(catalog)
 
     if (value := item.properties.get("title")):
@@ -189,4 +180,12 @@ def pick_cql2_filters(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[s
         else:
             raise Exception("No candidate property found")
 
-    return (f"{property} LIKE '{value[:3]}%'", {"op": "like", "args": [{"property": property}, f"{value[:3]}%"]})
+    text_filter = f"{property} LIKE '{value[:3]}%'"
+    json_filter = {"op": "like", "args": [{"property": property}, f"{value[:3]}%"]}
+
+    def validate(item: pystac.Item) -> bool:
+        candidate_value = item.properties.get(property, None)
+
+        return isinstance(candidate_value, str) and candidate_value.startswith(value[:3])
+
+    return (text_filter, json_filter, validate)

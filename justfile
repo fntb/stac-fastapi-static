@@ -37,15 +37,15 @@ publish-ghcr:
 	docker push ghcr.io/fntb/stac-fastapi-static:latest
 
 # Starts the server
-dev catalog_href=("file://" + justfile_directory() /  "stac_test_catalogs/1000/catalog.json"): uv
+dev catalog_href: uv
 	log_level=info \
 	environment=dev \
 	catalog_href={{catalog_href}} \
 	uv run stac_fastapi/static/app.py
 
-# Generates a STAC catalog with roughtly  `n_items` items
-generate-test-catalog n_items="1000": uv
-	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run scripts/generate_test_catalog.py {{n_items}}
+# Clones a catalog for testing purposes
+clone *args: uv
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run scripts/clone_catalog.py {{args}}
 
 test catalog_href api_base_href="default": uv
 	log_level=info \

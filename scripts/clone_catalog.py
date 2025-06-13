@@ -1,6 +1,31 @@
+from typing import Optional
+
+import argparse
+import os
+
 import pystac
 
-catalog = pystac.Catalog.from_file("")
+parser = argparse.ArgumentParser()
+parser.add_argument("catalog_href", type=str, metavar="catalog-href", help="Catalog to clone")
+parser.add_argument("catalog_name", type=str, metavar="catalog-name", help="Name of the created catalog directory")
+parser.add_argument(
+    "-o", "--catalog-dir",
+    help="Output directory for the generated catalog, defaults to ./test_catalogs/<catalog-name>/",
+)
+
+args = parser.parse_args()
+
+catalog_href: str = args.catalog_href
+catalog_name: str = args.catalog_name
+catalog_dir: Optional[str] = args.catalog_dir
+
+if catalog_dir:
+    catalog_file = os.path.abspath(os.path.join(catalog_dir, catalog_name, "catalog.json"))
+else:
+    catalog_file = os.path.abspath(os.path.join("test_catalogs", catalog_name, "catalog.json"))
+
+
+catalog = pystac.Catalog.from_file(catalog_href)
 
 
 def resolve_partial_catalog(catalog: pystac.Catalog | pystac.Collection | pystac.Item):
@@ -29,4 +54,4 @@ def resolve_partial_catalog(catalog: pystac.Catalog | pystac.Collection | pystac
 
 resolve_partial_catalog(catalog)
 
-catalog.normalize_and_save("", skip_unresolved=True)
+catalog.normalize_and_save(catalog_file, skip_unresolved=True)

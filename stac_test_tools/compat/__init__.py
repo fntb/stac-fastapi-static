@@ -1,4 +1,0 @@
-
-from .fromisoformat import (
-    fromisoformat
-)
