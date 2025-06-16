@@ -44,7 +44,7 @@ class Collections(TypedDict, total=False):
 
 
 def test_get_item_search_response_model(api_base_href: str):
-    response = requests.get(urljoin(api_base_href, "/search"))
+    response = requests.get(urljoin(api_base_href, "search"))
 
     response.raise_for_status()
 
@@ -52,7 +52,7 @@ def test_get_item_search_response_model(api_base_href: str):
 
 
 def test_post_item_search_response_model(api_base_href: str):
-    response = requests.post(urljoin(api_base_href, "/search"), json={})
+    response = requests.post(urljoin(api_base_href, "search"), json={})
 
     response.raise_for_status()
 
@@ -63,7 +63,7 @@ def test_item_response_model(api_base_href: str, catalog: pystac.Catalog):
     item = pick_item(catalog)
     collection = item.get_parent()
 
-    response = requests.get(urljoin(api_base_href, f"/collections/{collection.id}/items/{item.id}"))
+    response = requests.get(urljoin(api_base_href, f"collections/{collection.id}/items/{item.id}"))
 
     response.raise_for_status()
 
@@ -71,7 +71,7 @@ def test_item_response_model(api_base_href: str, catalog: pystac.Catalog):
 
 
 def test_all_collections_response_model(api_base_href: str):
-    request_href = "/collections"
+    request_href = "collections"
 
     response = requests.get(urljoin(api_base_href, request_href))
 
@@ -83,7 +83,7 @@ def test_all_collections_response_model(api_base_href: str):
 def test_collection_response_model(api_base_href: str, catalog: pystac.Catalog):
     collection = pick_collection(catalog)
 
-    request_href = f"/collections/{collection.id}"
+    request_href = f"collections/{collection.id}"
     response = requests.get(urljoin(api_base_href, request_href))
 
     response.raise_for_status()
@@ -94,7 +94,7 @@ def test_collection_response_model(api_base_href: str, catalog: pystac.Catalog):
 def test_collection_items_response_model(api_base_href: str, catalog: pystac.Catalog):
     collection = pick_collection(catalog)
 
-    request_href = f"/collections/{collection.id}/items"
+    request_href = f"collections/{collection.id}/items"
     response = requests.get(urljoin(api_base_href, request_href))
 
     response.raise_for_status()
@@ -103,7 +103,7 @@ def test_collection_items_response_model(api_base_href: str, catalog: pystac.Cat
 
 
 def test_base_queryables_response_model(api_base_href: str):
-    request_href = "/queryables"
+    request_href = "queryables"
     response = requests.get(urljoin(api_base_href, request_href))
 
     response.raise_for_status()
@@ -117,7 +117,7 @@ def test_base_queryables_response_model(api_base_href: str):
 def test_collection_queryables_response_model(api_base_href: str, catalog: pystac.Catalog):
     collection = pick_collection(catalog)
 
-    request_href = f"/collections/{collection.id}/queryables"
+    request_href = f"collections/{collection.id}/queryables"
     response = requests.get(urljoin(api_base_href, request_href))
 
     response.raise_for_status()

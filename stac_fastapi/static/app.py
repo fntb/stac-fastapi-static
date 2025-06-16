@@ -27,9 +27,9 @@ def main():
     try:
         import uvicorn
 
-        if settings.reload and settings.environment != "prod":
+        if settings.reload and settings.environment not in ["prod", "production"]:
             settings.reload = False
-            logger.warning("Overriding reload setting in non-'prod' environment")
+            logger.warning("Overriding reload setting in development / test environment")
 
         logger.warning("Settings : %s", settings.model_dump())
 
@@ -38,7 +38,7 @@ def main():
             host=settings.app_host,
             port=settings.app_port,
             log_level=settings.log_level,
-            reload=settings.reload if not settings.environment == "prod" else False,
+            reload=settings.reload,
             root_path=settings.root_path,
         )
     except ImportError as error:

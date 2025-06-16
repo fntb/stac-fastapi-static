@@ -11,8 +11,8 @@ uv:
 
 
 # Install the dependencies
-install: uv
-	uv sync --frozen --all-extras --all-groups
+install *args: uv
+	uv sync --frozen --all-extras --all-groups {{args}}
 
 # Build the package and containerized server image
 build: uv
@@ -47,19 +47,27 @@ dev catalog_href: uv
 clone *args: uv
 	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run scripts/clone_catalog.py {{args}}
 
-test catalog_href api_base_href="default": uv
+
+test-unit catalog_href: uv
 	log_level=info \
 	environment=dev \
 	catalog_href={{catalog_href}} \
-	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest -vv -s --ignore=stac_test_catalogs --api-base-href {{api_base_href}}
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest test/unit/ -vv -s --showlocals --api-base-href default
+
+test-functional catalog_href api_base_href="default": uv
+	log_level=info \
+	environment=dev \
+	catalog_href={{catalog_href}} \
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest test/functional/ -vv -s --showlocals --api-base-href {{api_base_href}}
 
 # Runs the containerized server
 run catalog_href *docker_args:
 	docker run \
 	--env-file .env \
 	--env app_port=${app_port:-8000} \
-	--env environment=prod \
-	--env log_level=warning \
+	--env app_host=${app_host:-0.0.0.0} \
+	--env environment=dev \
+	--env log_level=info \
 	--env catalog_href={{catalog_href}} \
 	--volume /tmp:/tmp \
 	--publish ${app_port:-8000}:${app_port:-8000} \

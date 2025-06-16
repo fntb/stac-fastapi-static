@@ -17,6 +17,8 @@ from ..errors import (
     BadStacObjectError
 )
 
+from ..lib.datetimes_intersect import datetimes_intersect
+
 
 def get_datetime(stac_object: Item | Collection | Catalog) -> datetimelib.datetime | tuple[datetimelib.datetime, datetimelib.datetime]:
 
@@ -26,10 +28,10 @@ def get_datetime(stac_object: Item | Collection | Catalog) -> datetimelib.dateti
         # no validation required, common metadata should be present ?
         common_metadata: StacCommonMetadata = stac_object
 
-    if common_metadata.datetime:
-        return common_metadata.datetime
-    elif common_metadata.start_datetime and common_metadata.end_datetime:
-        return (common_metadata.start_datetime, common_metadata.end_datetime)
+    if common_metadata.start_datetime and common_metadata.end_datetime:
+        return (fromisoformat(common_metadata.start_datetime), fromisoformat(common_metadata.end_datetime))
+    elif common_metadata.datetime:
+        return fromisoformat(common_metadata.datetime)
     else:
         raise BadStacObjectError(
             "Bad STAC Object - Common metadata are missing both datetime and start_datetime/end_datetime"
@@ -76,38 +78,6 @@ def get_temporal_extent(collection: Collection, assume_extent_spec: bool = True)
         ]
 
 
-def _intersect_datetime_and_interval(
-        datetime: datetimelib.datetime,
-        interval: tuple[datetimelib.datetime | None, datetimelib.datetime | None]
-) -> bool:
-    return (interval[0] is None or datetime >= interval[0]) and (interval[1] is None or datetime <= interval[1])
-
-
-def _intersect_intervals(
-    interval_a: tuple[datetimelib.datetime | None, datetimelib.datetime | None],
-    interval_b: tuple[datetimelib.datetime | None, datetimelib.datetime | None]
-) -> bool:
-    return (
-        interval_a[0] is None or interval_b[1] is None or interval_a[0] <= interval_b[1]
-    ) and (
-        interval_a[1] is None or interval_b[0] is None or interval_a[1] >= interval_b[0]
-    )
-
-
-def _intersect(
-        a: tuple[datetimelib.datetime | None, datetimelib.datetime | None] | datetimelib.datetime,
-        b: tuple[datetimelib.datetime | None, datetimelib.datetime | None] | datetimelib.datetime
-):
-    if isinstance(a, datetimelib.datetime) and isinstance(b, datetimelib.datetime):
-        return a == b
-    elif isinstance(a, datetimelib.datetime):
-        return _intersect_datetime_and_interval(a, b)
-    elif isinstance(b, datetimelib.datetime):
-        return _intersect_datetime_and_interval(b, a)
-    else:
-        return _intersect_intervals(a, b)
-
-
 def make_match_temporal_extent(
     datetime: Optional[datetimelib.datetime | tuple[datetimelib.datetime | None, datetimelib.datetime | None]] = None,
     assume_extent_spec: bool = True
@@ -124,7 +94,7 @@ def make_match_temporal_extent(
             )
 
             for interval in collection_extent:
-                if _intersect(datetime, interval):
+                if datetimes_intersect(datetime, interval):
                     return True
 
             return False
@@ -142,6 +112,6 @@ def make_match_datetime(
     else:
         def match(item: Item) -> bool:
             item_datetime = get_datetime(item)
-            return _intersect(datetime, item_datetime)
+            return datetimes_intersect(datetime, item_datetime)
 
     return match

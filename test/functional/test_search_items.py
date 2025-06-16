@@ -41,8 +41,8 @@ def test_search_items_by_id(api_base_href: str, catalog: pystac.Catalog):
     }
 
     for response in (
-        requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-        requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+        requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+        requests.post(urljoin(api_base_href, "search"), json=post_request_param)
     ):
         response.raise_for_status()
 
@@ -66,8 +66,8 @@ def test_search_items_by_collection(api_base_href: str, catalog: pystac.Catalog)
     }
 
     for response in (
-        requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-        requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+        requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+        requests.post(urljoin(api_base_href, "search"), json=post_request_param)
     ):
         response.raise_for_status()
 
@@ -97,8 +97,8 @@ def test_search_items_by_bbox(api_base_href: str, catalog: pystac.Catalog):
     }
 
     for response in (
-        requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-        requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+        requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+        requests.post(urljoin(api_base_href, "search"), json=post_request_param)
     ):
         response.raise_for_status()
 
@@ -121,8 +121,8 @@ def test_search_items_by_geometry_intersection(api_base_href: str, catalog: pyst
     }
 
     for response in (
-        requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-        requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+        requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+        requests.post(urljoin(api_base_href, "search"), json=post_request_param)
     ):
         response.raise_for_status()
 
@@ -150,8 +150,8 @@ def test_search_items_by_datetime(api_base_href: str, catalog: pystac.Catalog):
         } if datetime_str else {}
 
         for response in (
-            requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-            requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+            requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+            requests.post(urljoin(api_base_href, "search"), json=post_request_param)
         ):
             response.raise_for_status()
 
@@ -160,7 +160,7 @@ def test_search_items_by_datetime(api_base_href: str, catalog: pystac.Catalog):
             assert len(item_collection.items) > 0
 
             for item in item_collection.items:
-                assert match_datetime(stac_pydantic.Item.model_validate(item.to_dict()))
+                assert match_datetime(stac_pydantic.Item.model_validate(item.to_dict(transform_hrefs=False)))
 
 
 def test_search_items_limit(api_base_href: str, catalog: pystac.Catalog):
@@ -168,8 +168,8 @@ def test_search_items_limit(api_base_href: str, catalog: pystac.Catalog):
     post_request_param = {"limit": 10}
 
     for response in (
-        requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-        requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+        requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+        requests.post(urljoin(api_base_href, "search"), json=post_request_param)
     ):
         response.raise_for_status()
 
@@ -188,8 +188,8 @@ def test_search_items_by_cql2_filtering(api_base_href: str, catalog: pystac.Cata
     }
 
     for response in (
-        requests.get(urljoin(api_base_href, f"/search?{get_request_param}")),
-        requests.post(urljoin(api_base_href, "/search"), json=post_request_param)
+        requests.get(urljoin(api_base_href, f"search?{get_request_param}")),
+        requests.post(urljoin(api_base_href, "search"), json=post_request_param)
     ):
         response.raise_for_status()
 

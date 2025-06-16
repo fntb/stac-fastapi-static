@@ -30,7 +30,7 @@ class Settings(ApiSettings):
     stac_fastapi_version: str = "0.1"
     stac_fastapi_landing_id: str = "stac-fastapi"
 
-    app_host: str = "0.0.0.0"
+    app_host: str = "127.0.0.1"
     app_port: int = 8000
     reload: bool = True
 
@@ -46,8 +46,8 @@ class Settings(ApiSettings):
 
     # --- Custom Settings ---
 
-    environment: Literal["dev", "prod"] = Field(
-        "prod",
+    environment: Literal["dev", "development", "prod", "production"] = Field(
+        "production",
         description="In dev mode python errors returned from the API are not sanitized and may expose secrets."
     )
 

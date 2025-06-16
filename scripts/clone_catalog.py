@@ -4,6 +4,7 @@ import argparse
 import os
 
 import pystac
+import pystac.errors
 
 parser = argparse.ArgumentParser()
 parser.add_argument("catalog_href", type=str, metavar="catalog-href", help="Catalog to clone")
@@ -24,8 +25,14 @@ if catalog_dir:
 else:
     catalog_file = os.path.abspath(os.path.join("test_catalogs", catalog_name, "catalog.json"))
 
-
-catalog = pystac.Catalog.from_file(catalog_href)
+for cls in (pystac.Catalog, pystac.Collection):
+    try:
+        catalog = cls.from_file(catalog_href)
+        break
+    except pystac.STACTypeError:
+        pass
+else:
+    raise ValueError(f"{catalog_href} is not a valid Catalog or Collection")
 
 
 def resolve_partial_catalog(catalog: pystac.Catalog | pystac.Collection | pystac.Item):

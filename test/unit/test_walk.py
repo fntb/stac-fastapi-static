@@ -254,7 +254,7 @@ def test_walk_temporal_filters(catalog: pystac.Catalog, catalog_href: str, sessi
                     settings=settings
                 )
             )
-            if walk_result.type == Item
+            if walk_result.type is Item
         )
 
         matched_collections = set(
@@ -267,13 +267,13 @@ def test_walk_temporal_filters(catalog: pystac.Catalog, catalog_href: str, sessi
                     settings=settings
                 )
             )
-            if walk_result.type == Collection
+            if walk_result.type is Collection
         )
 
         assert len(matched_items) > 0
         assert matched_items <= expected_matching_items
 
-        assert len(matched_collections) > 0
+        assert matched_collections
         assert matched_collections <= expected_matching_collections
 
 
