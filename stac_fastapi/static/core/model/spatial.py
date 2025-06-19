@@ -20,13 +20,16 @@ from ..errors import (
     BadStacObjectFilterError
 )
 
+from ..lib.geometries_intersect import geometries_intersect
+
 
 def get_bbox(geojson_feature: Feature) -> shapely.Polygon:
     try:
         return shapely.box(*geojson_feature.bbox)
     except Exception as error:
         raise BadStacObjectError(
-            "Bad STAC Object - Bad bbox : " + str(error)
+            "Bad STAC Object - Bad bbox : " + str(error),
+            object=geojson_feature
         ) from error
 
 
@@ -35,31 +38,28 @@ def get_geometry(geojson_feature: Feature) -> shapely.Geometry:
         return shapely.geometry.shape(geojson_feature.geometry)
     except Exception as error:
         raise BadStacObjectError(
-            "Bad STAC Object - Bad geometry : " + str(error)
+            "Bad STAC Object - Bad geometry : " + str(error),
+            object=geojson_feature
         ) from error
 
 
-def get_spatial_extent(collection: Collection, assume_extent_spec: bool = True) -> shapely.Polygon:
+def get_spatial_extent(collection: Collection) -> shapely.Polygon:
     bboxes = collection.extent.spatial.bbox
 
-    try:
-        if assume_extent_spec:
-            return shapely.box(*bboxes[0])
-        else:
-            return shapely.union_all([
-                shapely.box(*bbox)
-                for bbox
-                in bboxes
-            ])
-    except Exception as error:
-        raise BadStacObjectError(
-            "Bad STAC Collection - Bad spatial extent : " + str(error)
-        ) from error
+    if not bboxes:
+        raise BadStacObjectError("Bad STAC Collection - Missing spatial extent", object=collection)
+    elif len(bboxes) == 1:
+        return shapely.box(*bboxes[0])
+    else:
+        return shapely.union_all([
+            shapely.box(*bbox)
+            for bbox
+            in bboxes[1:]
+        ])
 
 
 def make_match_spatial_extent(
-    geometry: Optional[Geometry | BBox] = None,
-    assume_extent_spec: bool = True
+    geometry: Optional[Geometry | BBox] = None
 ) -> Callable[[Collection], bool]:
 
     if geometry is None:
@@ -77,9 +77,9 @@ def make_match_spatial_extent(
             ) from error
 
         def match(collection: Collection) -> bool:
-            collection_extent_geometry = get_spatial_extent(collection, assume_extent_spec=assume_extent_spec)
+            collection_extent_geometry = get_spatial_extent(collection)
 
-            return shapely.intersects(geometry, collection_extent_geometry)
+            return geometries_intersect(geometry, collection_extent_geometry)
 
     return match
 
@@ -102,7 +102,7 @@ def make_match_bbox(
         def match(item: Item):
             item_bbox = get_bbox(item)
 
-            return shapely.intersects(bbox, item_bbox)
+            return geometries_intersect(bbox, item_bbox)
 
     return match
 
@@ -125,6 +125,6 @@ def make_match_geometry(
         def match(item: Item):
             item_geometry = get_geometry(item)
 
-            return shapely.intersects(geometry, item_geometry)
+            return geometries_intersect(geometry, item_geometry)
 
     return match

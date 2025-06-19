@@ -34,11 +34,12 @@ def get_datetime(stac_object: Item | Collection | Catalog) -> datetimelib.dateti
         return fromisoformat(common_metadata.datetime)
     else:
         raise BadStacObjectError(
-            "Bad STAC Object - Common metadata are missing both datetime and start_datetime/end_datetime"
+            "Bad STAC Object - Common metadata are missing both datetime and start_datetime/end_datetime",
+            object=stac_object
         )
 
 
-def get_temporal_extent(collection: Collection, assume_extent_spec: bool = True) -> list[tuple[datetimelib.datetime | None, datetimelib.datetime | None]]:
+def get_temporal_extent(collection: Collection) -> list[tuple[datetimelib.datetime | None, datetimelib.datetime | None]]:
     intervals = collection.extent.temporal.interval
 
     def parse_interval(*datetimes_str: str):
@@ -49,38 +50,32 @@ def get_temporal_extent(collection: Collection, assume_extent_spec: bool = True)
             )
         except Exception as error:
             raise BadStacObjectError(
-                "Bad STAC Collection - Bad temporal extent : Bad datetime interval : " + str(error)
+                "Bad STAC Collection - Bad temporal extent : Bad datetime interval : " + str(error),
+                object=collection
             ) from error
 
-    if assume_extent_spec:
-        try:
-            (overall_interval, intervals) = (intervals[0], intervals[1:])
-        except KeyError as error:
-            raise BadStacObjectError(
-                "Bad STAC Collection - Bad temporal extent : Empty extent " + str(error)
-            ) from error
+    try:
+        (overall_interval, intervals) = (intervals[0], intervals[1:])
+    except KeyError as error:
+        raise BadStacObjectError(
+            "Bad STAC Collection - Missing temporal extent",
+            object=collection
+        ) from error
 
-        if intervals:
-            return [
-                parse_interval(*interval)
-                for interval
-                in intervals
-            ]
-        else:
-            return [
-                parse_interval(*overall_interval)
-            ]
-    else:
+    if intervals:
         return [
             parse_interval(*interval)
             for interval
             in intervals
         ]
+    else:
+        return [
+            parse_interval(*overall_interval)
+        ]
 
 
 def make_match_temporal_extent(
     datetime: Optional[datetimelib.datetime | tuple[datetimelib.datetime | None, datetimelib.datetime | None]] = None,
-    assume_extent_spec: bool = True
 ) -> Callable[[Collection], bool]:
 
     if datetime is None:
@@ -90,7 +85,6 @@ def make_match_temporal_extent(
         def match(collection: Collection) -> bool:
             collection_extent = get_temporal_extent(
                 collection,
-                assume_extent_spec=assume_extent_spec
             )
 
             for interval in collection_extent:

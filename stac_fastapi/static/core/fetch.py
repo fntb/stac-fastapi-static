@@ -29,10 +29,6 @@ from .requests import (
 )
 
 
-class PartialJSONDecodeError(BadStacObjectError):
-    ...
-
-
 class IdObject(pydantic.BaseModel):
 
     id: str = pydantic.Field(..., alias="id", min_length=1)
@@ -58,14 +54,14 @@ def fetch_id(href: str, *, session: requests.Session = Session(), assume_best_pr
             except pydantic.ValidationError as error:
                 pass
             except ValueError as error:
-                raise PartialJSONDecodeError(f"Bad JSON : {href}") from error
+                raise BadStacObjectError(f"Bad JSON : {href}", href=href) from error
             else:
                 return result.id
 
         try:
             return IdObject.model_validate_json(content).id
         except pydantic.ValidationError as error:
-            raise BadStacObjectError(f"Bad STAC Object : {href}") from error
+            raise BadStacObjectError(f"Not a STAC object : {href}", href=href) from error
 
 
 def fetch_walkable(href: str, *, session: requests.Session = Session(), assume_absolute_hrefs: bool = False) -> Collection | Catalog:
@@ -83,7 +79,8 @@ def fetch_walkable(href: str, *, session: requests.Session = Session(), assume_a
             errors.append(error)
     else:
         raise BadStacObjectError(
-            f"Bad STAC Catalog : {href}"
+            f"Bad STAC Catalog : {href}",
+            href=href
         ) from ExceptionGroup(
             "Not a STAC Catalog or Collection",
             errors
@@ -113,7 +110,8 @@ def fetch_item(href: str, *, session: requests.Session = Session(), assume_absol
         item = Item.model_validate_json(response.text)
     except pydantic.ValidationError as error:
         raise BadStacObjectError(
-            f"Bad STAC Item : {href}"
+            f"Bad STAC Item : {href}",
+            href=href
         ) from error
 
     try:

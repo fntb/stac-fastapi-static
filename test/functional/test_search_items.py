@@ -1,13 +1,6 @@
 
 import pytest
 
-from typing import (
-    List,
-    Dict,
-    Optional,
-    Any,
-)
-
 from urllib.parse import urljoin
 import requests
 import pystac

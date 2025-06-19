@@ -37,12 +37,10 @@ logger = logging.getLogger(__name__)
 
 def make_spatial_extent_filter(
     geometry: Optional[Geometry | BBox] = None,
-    assume_extent_spec: bool = True
 ) -> Callable[[WalkResult], bool]:
 
     match_spatial_extent = make_match_spatial_extent(
         geometry=geometry,
-        assume_extent_spec=assume_extent_spec
     )
 
     def filter(walk_result: WalkResult) -> bool:
@@ -68,12 +66,10 @@ def make_spatial_extent_filter(
 
 def make_bbox_filter(
     bbox: Optional[BBox] = None,
-    assume_extent_spec: bool = True
 ) -> Callable[[WalkResult], bool]:
 
     match_spatial_extent = make_match_spatial_extent(
         geometry=bbox,
-        assume_extent_spec=assume_extent_spec
     )
 
     match_bbox = make_match_bbox(
@@ -116,12 +112,10 @@ def make_bbox_filter(
 
 def make_geometry_filter(
     geometry: Optional[Geometry] = None,
-    assume_extent_spec: bool = True
 ) -> Callable[[WalkResult], bool]:
 
     match_spatial_extent = make_match_spatial_extent(
         geometry=geometry,
-        assume_extent_spec=assume_extent_spec
     )
 
     match_geometry = make_match_geometry(

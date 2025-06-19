@@ -7,8 +7,6 @@
 
 [Static STAC Catalog](https://github.com/radiantearth/stac-spec/tree/master/catalog-spec) backend for [stac-fastapi](https://github.com/stac-utils/stac-fastapi), the [FastAPI](https://fastapi.tiangolo.com/) implementation of the [STAC API spec](https://github.com/radiantearth/stac-api-spec).
 
-_This project is still in (late) initial development phase._
-
 ## Overview
 
 **stac-fastapi-static** is a [stac-fastapi](https://github.com/stac-utils/stac-fastapi) backend built in [FastAPI](https://fastapi.tiangolo.com/). It provides an implementation of the [STAC API spec](https://github.com/radiantearth/stac-api-spec) ready to be deployed on top of a static STAC catalog. The target backend static catalog can be remotely hosted (by any static HTTP server) or locally hosted (filesystem).
@@ -26,25 +24,44 @@ From [STAC API Extensions](https://stac-api-extensions.github.io/) page :
 
 | Extension                                                                                                                                                             | Support                                                                                                                                                                                 |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**Collection Search**](https://github.com/stac-api-extensions/collection-search)                                                                                     | **Yes**                                                                                                                                                                                 |
+| [**Filter**](https://github.com/stac-api-extensions/filter)                                                                                                           | **Yes**                                                                                                                                                                                 |
 | [**Query**](https://github.com/stac-api-extensions/query)                                                                                                             | **No** - Not intended : _"It is recommended to implement the Filter Extension instead of the Query Extension" [Query Extension homepage](https://github.com/stac-api-extensions/query)_ |
 | [**Sort**](https://github.com/stac-api-extensions/sort)                                                                                                               | **No** - Not intended : Hard to implement in an performant enough manner to be viable with a static catalog                                                                             |
 | [**Transaction**](https://github.com/stac-api-extensions/transaction) and [**Collection Transaction**](https://github.com/stac-api-extensions/collection-transaction) | **No** - Not intended - Feasible                                                                                                                                                        |
 | [**Fields**](https://github.com/stac-api-extensions/fields)                                                                                                           | **No** - Not intended - Feasible                                                                                                                                                        |
-| [**Filter**](https://github.com/stac-api-extensions/filter)                                                                                                           | **Yes**                                                                                                                                                                                 |
-| [**Collection Search**](https://github.com/stac-api-extensions/collection-search)                                                                                     | **Yes**                                                                                                                                                                                 |
 | [**Language**](https://github.com/stac-api-extensions/language)                                                                                                       | **No** - Maybe soon ? - Feasible                                                                                                                                                        |
 
-## Use Cases & Limitations
+## Use Case
 
-The appeal of instanciating a STAC API directly on top of a static catalog is obvious. However the performance issue will make or break this project.
+First there are the general STAC use cases : see [the STAC spec website](https://stacspec.org/en).
 
-Our goal is to provide viable performances on a 500,000 item static catalog.
+Then there are the advantages of using a static catalog :
 
-### Design Choices, Performances and limitations
+- Easier initial exploration, and easier exploration in general for non-technical people by using [stac-browser](https://radiantearth.github.io/stac-browser/#/?.language=en) _(which can be made beautiful, see [this catalog](https://browser.apex.esa.int/?.language=en) for instance)._
+- No database to maintain.
+
+And finally there is what `stac-fastapi-static` brings in addition to the above :
+
+- **plug-and-play** - Just `pip install` or `docker run` the server while pointing it to your deployed or local static catalog.json (see below).
+- **very easy to migrate to (and from)** - `stac-fastapi-static` only requires a valid STAC catalog which it won't touch (just read).
+- best possible performances **given the inherent limits of filesystem reads** - We tried to take advantage of every details of the STAC spec to speed up requests (see below).
+
+### Performances and limitations
 
 Inherently, building an API on a 100,000s items static STAC catalog is going to be far slower than on a database backed catalog, however the STAC specs defines constraints (and recommendations) that can be abused to design a performant enough API.
 
-_todo : Include data plots from locust tests on big catalogs._
+Our goal is to provide viable performances on a 500,000 item static catalog.
+
+![Response times](./doc/benchmark.png)
+
+_Response times obtained on a (yet) unpublished catalog at the OPGC._
+
+Results depend quite heavily on the catalog structure. `stac-fastapi-static` is more efficient the more tree-like the catalog is (e.g. serving a single collection of 10,000s items is going to be very inefficient, while on the other hand a deeply nested catalog will be quite efficiently served). Feel free to test on your own catalog :
+
+```bash
+just benchmark <path-to-catalog.json>
+```
 
 ## Usage
 
@@ -52,20 +69,17 @@ _todo : Include data plots from locust tests on big catalogs._
 
 ```bash
 docker run \
-	--env-file .env \
-	--env app_port=8000 \
-	--env environment=prod \
-	--env log_level=warning \
-	--env catalog_href=<catalog_url> \
-	--volume /tmp:/tmp \
-	--publish 8000:8000 \
-	ghcr.io/fntb/stac-fastapi-static:latest
+  --env-file .env \
+  --env app_port=8000 \
+  --env app_host=0.0.0.0 \
+  --env environment=production \
+  --env log_level=warning \
+  --env catalog_href=/var/www/html/static/catalog.json \
+  --volume /tmp:/tmp \
+  --volume /var/www/html/static:/var/www/html/static \
+  --publish 8080:8000 \
+  ghcr.io/fntb/stac-fastapi-static:latest
 ```
-
-Note :
-
-- `--volume <path-to-catalog-directory>:/app/catalog/` and `--env catalog_href=file:///app/catalog/catalog.json` to serve a local catalog
-- See [the Justfile](./justfile).
 
 ### Alternative Method : Python Packaged API Server
 
@@ -109,7 +123,7 @@ just --list
 
 Or see [the Justfile](./justfile).
 
-Release checklist : bump [version](./stac_fastapi/static/__about__.py), build, commit, tag, push, publish to pypi and ghcr.
+Release checklist : bump [version](./stac_fastapi/static/__about__.py), build, test build, commit, tag, push, publish to pypi and ghcr.
 
 ## History
 

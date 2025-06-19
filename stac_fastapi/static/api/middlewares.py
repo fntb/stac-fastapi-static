@@ -35,7 +35,6 @@ class ProfileMiddleware(BaseHTTPMiddleware):
 
         # if self._settings.profile:
         #     response.headers["X-SETTING-assume_best_practice_layout"] = str(self._settings.assume_best_practice_layout)
-        #     response.headers["X-SETTING-assume_extent_spec"] = str(self._settings.assume_extent_spec)
         #     response.headers["X-SETTING-cache"] = str(self._settings.cache)
 
         return response

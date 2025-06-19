@@ -110,19 +110,39 @@ def _random_walk_catalog_collections(catalog: pystac.Catalog) -> Iterator[pystac
 
 
 def pick_item(catalog: pystac.Catalog | pystac_client.Client) -> pystac.Item:
-    return next(random_walk_items(catalog))
+    for (i, item) in enumerate(random_walk_items(catalog)):
+        if i >= 9:
+            return item
 
 
 def pick_collection(catalog: pystac.Catalog | pystac_client.Client) -> pystac.Collection:
-    return next(random_walk_collections(catalog))
+    for (i, collection) in enumerate(random_walk_collections(catalog)):
+        if i >= 9:
+            return collection
 
 
 def pick_items(catalog: pystac.Catalog | pystac_client.Client, n: int = 1) -> List[pystac.Item]:
-    return list(islice(random_walk_items(catalog), n))
+    items = []
+
+    for (i, item) in enumerate(random_walk_items(catalog)):
+        if i >= 9 and i < 9 + n:
+            items.append(item)
+        if i >= 9 + n:
+            break
+
+    return items
 
 
 def pick_collections(catalog: pystac.Catalog | pystac_client.Client, n: int = 1) -> List[pystac.Collection]:
-    return list(islice(random_walk_collections(catalog), n))
+    collections = []
+
+    for (i, collection) in enumerate(random_walk_collections(catalog)):
+        if i >= 9 and i < 9 + n:
+            collections.append(collection)
+        if i >= 9 + n:
+            break
+
+    return collections
 
 
 def pick_bbox(catalog: pystac.Catalog | pystac_client.Client) -> shapely.Polygon:

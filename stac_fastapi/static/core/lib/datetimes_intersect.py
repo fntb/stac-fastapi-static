@@ -23,7 +23,7 @@ def _intersect_datetimes(
 def datetimes_intersect(
         a: tuple[datetimelib.datetime | None, datetimelib.datetime | None] | datetimelib.datetime,
         b: tuple[datetimelib.datetime | None, datetimelib.datetime | None] | datetimelib.datetime
-):
+) -> bool:
     if isinstance(a, datetimelib.datetime) and isinstance(b, datetimelib.datetime):
         return a == b
     elif isinstance(a, datetimelib.datetime):

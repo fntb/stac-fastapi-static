@@ -60,6 +60,12 @@ test-functional catalog_href api_base_href="default": uv
 	catalog_href={{catalog_href}} \
 	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest test/functional/ -vv -s --showlocals --api-base-href {{api_base_href}}
 
+benchmark catalog_href api_base_href="default": uv
+	log_level=info \
+	environment=dev \
+	catalog_href={{catalog_href}} \
+	PYTHONPATH=${PYTHONPATH:-}:{{justfile_directory()}} uv run pytest test/performance/ -s --api-base-href {{api_base_href}}
+
 # Runs the containerized server
 run catalog_href *docker_args:
 	docker run \

@@ -36,12 +36,10 @@ logger = logging.getLogger(__name__)
 
 def make_temporal_extent_filter(
     datetime: Optional[datetimelib.datetime | tuple[datetimelib.datetime | None, datetimelib.datetime | None]] = None,
-    assume_extent_spec: bool = True
 ) -> Callable[[WalkResult], bool]:
 
     match_temporal_extent = make_match_temporal_extent(
         datetime=datetime,
-        assume_extent_spec=assume_extent_spec
     )
 
     def filter(walk_result: WalkResult) -> bool:
@@ -71,7 +69,6 @@ def make_temporal_extent_filter(
 
 def make_datetime_filter(
     datetime: Optional[datetimelib.datetime | tuple[datetimelib.datetime | None, datetimelib.datetime | None]] = None,
-    assume_extent_spec: bool = True
 ) -> Callable[[WalkResult], bool]:
 
     match_datetime = make_match_datetime(
@@ -80,7 +77,6 @@ def make_datetime_filter(
 
     match_temporal_extent = make_match_temporal_extent(
         datetime=datetime,
-        assume_extent_spec=assume_extent_spec
     )
 
     def filter(walk_result: WalkResult) -> bool:

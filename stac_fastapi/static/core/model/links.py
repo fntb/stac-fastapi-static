@@ -39,7 +39,7 @@ def get_self_href(stac_object: Item | Collection | Catalog) -> str:
         if link.rel == "self":
             return link.href
 
-    raise BadStacObjectError("Bad STAC Object - Missing 'self' link")
+    raise BadStacObjectError("Bad STAC Object - Missing 'self' link", object=stac_object)
 
 
 def set_self_href(stac_object: Item | Collection | Catalog, href: str):

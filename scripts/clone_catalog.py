@@ -13,12 +13,19 @@ parser.add_argument(
     "-o", "--catalog-dir",
     help="Output directory for the generated catalog, defaults to ./test_catalogs/<catalog-name>/",
 )
+parser.add_argument(
+    "--partial",
+    help="Clone a partial catalog instead of a full copy (much quicker for testing)",
+    type=bool,
+    default=False
+)
 
 args = parser.parse_args()
 
 catalog_href: str = args.catalog_href
 catalog_name: str = args.catalog_name
 catalog_dir: Optional[str] = args.catalog_dir
+partial: bool = args.partial
 
 if catalog_dir:
     catalog_file = os.path.abspath(os.path.join(catalog_dir, catalog_name, "catalog.json"))
@@ -59,6 +66,8 @@ def resolve_partial_catalog(catalog: pystac.Catalog | pystac.Collection | pystac
         catalog.links.remove(skipped_link)
 
 
-resolve_partial_catalog(catalog)
-
-catalog.normalize_and_save(catalog_file, skip_unresolved=True)
+if partial:
+    resolve_partial_catalog(catalog)
+    catalog.normalize_and_save(catalog_file, skip_unresolved=True)
+else:
+    catalog.normalize_and_save(catalog_file, skip_unresolved=False)

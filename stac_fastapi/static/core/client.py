@@ -57,7 +57,6 @@ from .pagination import (
 
 
 class ClientSettings(WalkSettings):
-    assume_extent_spec: bool
     catalog_href: str
 
 
@@ -76,7 +75,7 @@ def search_items(
     intersects: Optional[Intersection] = None,
     datetime: Optional[Datetime] = None,
     walk_marker: Optional[WalkMarker] = None,
-    limit: Optional[int] = 100,
+    limit: Optional[int] = 10,
     filter: Optional[Union[str, Dict]] = None,
     *,
     settings: ClientSettings,
@@ -106,24 +105,19 @@ def search_items(
             ),
             make_walk_spatial_extent_filter(
                 geometry=bbox or intersects,
-                assume_extent_spec=settings.assume_extent_spec
             ),
             make_walk_temporal_extent_filter(
                 datetime,
-                assume_extent_spec=settings.assume_extent_spec
             ),
             make_walk_filter_items(),
             make_walk_datetime_filter(
                 datetime,
-                assume_extent_spec=settings.assume_extent_spec
             ),
             make_walk_bbox_filter(
                 bbox,
-                assume_extent_spec=settings.assume_extent_spec
             ),
             make_walk_geometry_filter(
                 intersects,
-                assume_extent_spec=settings.assume_extent_spec
             ),
             make_walk_item_cql2_filter(filter)
         )
@@ -182,7 +176,7 @@ def get_item(
 
 def search_collections(
     walk_marker: Optional[WalkMarker] = None,
-    limit: Optional[int] = 100,
+    limit: Optional[int] = 10,
     bbox: Optional[BBox] = None,
     datetime: Optional[Datetime] = None,
     filter: Optional[Union[str, Dict]] = None,
@@ -198,11 +192,9 @@ def search_collections(
         ),
         make_walk_spatial_extent_filter(
             geometry=bbox,
-            assume_extent_spec=settings.assume_extent_spec
         ),
         make_walk_temporal_extent_filter(
             datetime,
-            assume_extent_spec=settings.assume_extent_spec
         ),
         make_walk_collection_cql2_filter(filter)
     )
@@ -247,7 +239,7 @@ def search_collection_items(
     bbox: Optional[BBox] = None,
     intersects: Optional[Intersection] = None,
     datetime: Optional[Datetime] = None,
-    limit: int = 100,
+    limit: int = 10,
     walk_marker: Optional[WalkMarker] = None,
     filter: Optional[Union[str, Dict]] = None,
     *,
@@ -273,15 +265,12 @@ def search_collection_items(
         make_walk_filter_items(),
         make_walk_datetime_filter(
             datetime,
-            assume_extent_spec=settings.assume_extent_spec
         ),
         make_walk_bbox_filter(
             bbox,
-            assume_extent_spec=settings.assume_extent_spec
         ),
         make_walk_geometry_filter(
             intersects,
-            assume_extent_spec=settings.assume_extent_spec
         ),
         make_walk_item_cql2_filter(filter)
     )

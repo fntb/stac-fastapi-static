@@ -89,7 +89,8 @@ class Settings(ApiSettings):
             " Any fully STAC-compliant catalog must implement this spec correctly"
             " so this option can be considered safe to enable even without familiarity with the underlying catalog."
             " This assumption enables finer extent-based filtering."
-        )
+        ),
+        deprecated=True
     )
     assume_absolute_hrefs: bool = Field(
         False,

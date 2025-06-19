@@ -1,14 +1,13 @@
 from typing import Optional
 
+import os
+import csv
+import warnings
 
 import pytest
 
 
-def pytest_configure(config):
-    config.addinivalue_line("markers", "perf(): Performance tests.")
-
-
-class Perfs():
+class Benchmark():
 
     _data: dict[str, list[float]]
 
@@ -21,45 +20,72 @@ class Perfs():
 
         self._data[route].append(time)
 
-    def plot(self, file: Optional[str] = None):
-        ...
-        # import matplotlib.pyplot as plt
-        # import numpy as np
+    def summarize(self, dir: Optional[str] = "doc"):
+        dir = os.path.abspath(dir)
 
-        # fig = plt.figure()
+        os.makedirs(dir, exist_ok=True)
 
-        # ax = fig.gca()
-        # ax.set_title("Response Time\n(median, 0.01/0.05-quantiles, distribution)")
-        # ax.set_ylabel("ms")
-        # ax.set_yscale("log")
+        headers = self._data.keys()
+        n = max(*(len(self._data[header]) for header in headers))
 
-        # labels = list(self._data.keys())
-        # values = list(self._data.values())
+        with open(os.path.join(dir, "benchmark.csv"), "w", newline="") as f:
+            spamwriter = csv.writer(f)
+            spamwriter.writerow(headers)
+            for i in range(n):
+                spamwriter.writerow([
+                    self._data[header][i] if i < len(self._data[header]) else None
+                    for header
+                    in headers
+                ])
 
-        # if not values:
-        #     return
+        try:
+            import matplotlib.pyplot as plt
+            import numpy as np
+        except ModuleNotFoundError:
+            warnings.warn("Cannot plot benchmark results - missing dependencies matplotlib and numpy")
+            return
 
-        # ax.set_xticks(np.arange(1, len(labels) + 1), labels=labels, rotation=90)
-        # ax.set_xlim(0.25, len(labels) + 0.75)
-        # ax.set_xlabel("Route")
+        labels = list(self._data.keys())
+        values = list(self._data.values())
 
-        # ax.violinplot(values, showmedians=True, quantiles=[[0.01, 0.05, 0.95, 0.99] for _ in labels])
+        if not values:
+            return
 
-        # if not file:
-        #     plt.show()
-        # else:
-        #     plt.savefig(file, bbox_inches="tight")
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+
+        ax1.set_title("Response Time")
+        ax1.set_ylabel("ms")
+        ax1.set_yscale("log")
+
+        ax1.set_xticks(np.arange(1, len(labels) + 1), labels=labels, rotation=90)
+        ax1.set_xlim(0.25, len(labels) + 0.75)
+        ax1.set_xlabel("Route")
+
+        ax1.violinplot(values, showmedians=True, showmeans=True)  # , quantiles=[[0.05, 0.95] for _ in labels]
+
+        ax2.set_title("Response Time (cropped)")
+        ax2.set_ylabel("ms")
+        ax2.set_ylim([0, 200])
+
+        ax2.set_xticks(np.arange(1, len(labels) + 1), labels=labels, rotation=90)
+        ax2.set_xlim(0.25, len(labels) + 0.75)
+        ax2.set_xlabel("Route")
+
+        ax2.violinplot(values, showmedians=True, showmeans=True)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(dir, "benchmark.png"), bbox_inches="tight")
 
 
-_perfs = Perfs()
+_benchmark = Benchmark()
 
 
 @pytest.hookimpl()
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
     if exitstatus == 0:
-        _perfs.plot("doc/perf.png")
+        _benchmark.summarize()
 
 
 @pytest.fixture
-def perfs(request: pytest.FixtureRequest) -> Perfs:
-    return _perfs
+def benchmark() -> Benchmark:
+    return _benchmark
