@@ -1,8 +1,7 @@
 
 from typing import (
-    Iterator,
-    Callable,
-    Optional
+    Optional,
+    Callable
 )
 
 import datetime as datetimelib
@@ -12,21 +11,16 @@ from stac_pydantic.item import Item
 from stac_pydantic.collection import Collection
 from stac_pydantic.catalog import Catalog
 
-from ..errors import (
+from .errors import (
     BadStacObjectError
 )
 
-from ..walk import (
+from .walk import (
     WalkResult,
     SkipWalk,
 )
 
-from .walk_filter import (
-    make_walk_filter,
-    make_walk_filter_factory
-)
-
-from ..model import (
+from .model import (
     make_match_datetime,
     make_match_temporal_extent,
 )
@@ -34,7 +28,7 @@ from ..model import (
 logger = logging.getLogger(__name__)
 
 
-def make_temporal_extent_filter(
+def make_filter_collections_temporal_extent(
     datetime: Optional[datetimelib.datetime | tuple[datetimelib.datetime | None, datetimelib.datetime | None]] = None,
 ) -> Callable[[WalkResult], bool]:
 
@@ -42,8 +36,7 @@ def make_temporal_extent_filter(
         datetime=datetime,
     )
 
-    def filter(walk_result: WalkResult) -> bool:
-
+    def filter_collections_temporal_extent(walk_result: WalkResult) -> bool:
         if walk_result.type is Catalog:
             walk_result.resolve()
 
@@ -64,13 +57,12 @@ def make_temporal_extent_filter(
         else:
             return True
 
-    return filter
+    return filter_collections_temporal_extent
 
 
-def make_datetime_filter(
+def make_filter_items_temporal_extent(
     datetime: Optional[datetimelib.datetime | tuple[datetimelib.datetime | None, datetimelib.datetime | None]] = None,
-) -> Callable[[WalkResult], bool]:
-
+):
     match_datetime = make_match_datetime(
         datetime=datetime
     )
@@ -79,7 +71,7 @@ def make_datetime_filter(
         datetime=datetime,
     )
 
-    def filter(walk_result: WalkResult) -> bool:
+    def filter_items_temporal_extent(walk_result: WalkResult) -> bool:
         walk_result.resolve()
 
         if walk_result.type is Collection:
@@ -108,9 +100,4 @@ def make_datetime_filter(
         else:
             return True
 
-    return filter
-
-
-make_walk_temporal_extent_filter = make_walk_filter_factory(make_temporal_extent_filter)
-
-make_walk_datetime_filter = make_walk_filter_factory(make_datetime_filter)
+    return filter_items_temporal_extent

@@ -12,15 +12,14 @@ import requests
 from .requests import Session
 
 from .walk import (
-    walk,
     WalkResult,
-    SkipWalk,
-    WalkSettings
+    WalkSettings,
+    as_walk,
+    Walk
 )
 
-from .walk_filters import (
-    make_walk_filter,
-    backraise_skip_walk
+from .walk_filter import (
+    WalkFilter
 )
 
 
@@ -48,6 +47,24 @@ def _get_collections_from_cache(
     )
 
 
+def make_filter_collections(collection_ids: Optional[list[str]] = None):
+    def filter_collections(walk_result: WalkResult) -> WalkResult[Collection]:
+        if walk_result.type is Item:
+            return False
+
+        walk_result.resolve()
+
+        if not walk_result.type is Collection:
+            return False
+
+        if not collection_ids or walk_result.resolve_id() in collection_ids:
+            return True
+
+        return False
+
+    return filter_collections
+
+
 def walk_collections(
     root: str | WalkResult,
     collection_ids: Optional[list[str]] = None,
@@ -61,42 +78,16 @@ def walk_collections(
         session=session,
         settings=settings
     )) is not None:
-        for walk_result in cached_walk_results:
-            try:
-                yield walk_result
-            except SkipWalk:
-                yield None
-
-                continue
+        return as_walk(cached_walk_results)
     else:
-
-        def filter_collections(walk_result: WalkResult):
-            if walk_result.type is Item:
-                return False
-
-            walk_result.resolve()
-
-            if not walk_result.type is Collection:
-                return False
-
-            if not collection_ids or walk_result.resolve_id() in collection_ids:
-                return True
-
-            return False
-
-        for walk_result in (_walk := make_walk_filter(filter_collections)(
-            walk(
-                root,
+        return WalkFilter(
+            Walk(
+                root=root,
                 session=session,
-                settings=settings,
-            )
-        )):
-            try:
-                yield walk_result
-            except SkipWalk:
-                yield None
-
-                backraise_skip_walk(_walk)
+                settings=settings
+            ),
+            make_filter_collections(collection_ids)
+        )
 
 
 def get_collection(

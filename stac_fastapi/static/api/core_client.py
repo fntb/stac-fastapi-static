@@ -34,9 +34,10 @@ from .config import Settings
 from stac_fastapi.static.core import (
     WalkResult,
     walk_collections,
-    make_walk_depth_filter,
+    make_filter_depth,
     BadStacObjectFilterError,
-    BadWalkResultError
+    BadWalkResultError,
+    WalkFilter
 )
 
 from stac_fastapi.static.core.requests import (
@@ -180,12 +181,13 @@ class CoreClient(BaseCoreClient):
                 "href": urljoin(base_url, f"collections/{walk_result.resolve().id}"),
             }
             for walk_result
-            in make_walk_depth_filter(depth=settings.landing_page_child_collections_max_depth)(
+            in WalkFilter(
                 walk_collections(
                     settings.catalog_href,
                     session=session,
                     settings=settings
-                )
+                ),
+                make_filter_depth(depth=settings.landing_page_child_collections_max_depth)
             )
         ])
 

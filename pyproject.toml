@@ -55,6 +55,8 @@ dev = [
     "matplotlib",
 ]
 
+doc = ["ipykernel>=6.29.5", "notebook>=7.4.3"]
+
 [project.scripts]
 stac-fastapi-static = "stac_fastapi.static.app:main"
 
@@ -77,7 +79,6 @@ packages = [
     "stac_fastapi.static.core.lib",
     "stac_fastapi.static.core.model",
     "stac_fastapi.static.core.requests",
-    "stac_fastapi.static.core.walk_filters",
 ]
 
 [tool.setuptools.dynamic]

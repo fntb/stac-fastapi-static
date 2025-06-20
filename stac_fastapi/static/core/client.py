@@ -26,23 +26,10 @@ from .walk import (
     walk
 )
 
-from .walk_filters import (
-    chain_walk_filters,
-    make_walk_pagination_filter,
-    make_walk_temporal_extent_filter,
-    make_walk_spatial_extent_filter,
-    make_walk_bbox_filter,
-    make_walk_collection_cql2_filter,
-    make_walk_datetime_filter,
-    make_walk_depth_filter,
-    make_walk_geometry_filter,
-    make_walk_item_cql2_filter
-)
-
 from .walk_items import (
     walk_items,
-    make_walk_filter_items,
-    get_item as _get_item
+    get_item as _get_item,
+    make_filter_items
 )
 
 from .walk_collections import (
@@ -53,6 +40,29 @@ from .walk_collections import (
 from .pagination import (
     WalkMarker,
     WalkPage
+)
+
+from .walk_filter import (
+    WalkFilterChainBuilder
+)
+
+from .filter_page import (
+    make_filter_page
+)
+from .filter_cql2 import (
+    make_filter_collections_cql2,
+    make_filter_items_cql2
+)
+from .filter_depth import (
+    make_filter_depth
+)
+from .filter_temporal_extent import (
+    make_filter_collections_temporal_extent,
+    make_filter_items_temporal_extent
+)
+from .filter_spatial_extent import (
+    make_filter_collections_spatial_extent,
+    make_filter_items_spatial_extent
 )
 
 
@@ -83,8 +93,8 @@ def search_items(
 ) -> WalkPage:
 
     if ids:
-        walk_filter_chain = chain_walk_filters(
-            make_walk_pagination_filter(
+        walk_filter_chain = WalkFilterChainBuilder().chain(
+            make_filter_page(
                 start=walk_marker.start if walk_marker else None,
                 end=walk_marker.end if walk_marker else None
             )
@@ -98,28 +108,35 @@ def search_items(
             settings=settings
         )
     else:
-        walk_filter_chain = chain_walk_filters(
-            make_walk_pagination_filter(
+        walk_filter_chain = WalkFilterChainBuilder().chain(
+            make_filter_page(
                 start=walk_marker.start if walk_marker else None,
                 end=walk_marker.end if walk_marker else None
-            ),
-            make_walk_spatial_extent_filter(
+            )
+        ).chain(
+            make_filter_collections_spatial_extent(
                 geometry=bbox or intersects,
-            ),
-            make_walk_temporal_extent_filter(
+            )
+        ).chain(
+            make_filter_collections_temporal_extent(
                 datetime,
-            ),
-            make_walk_filter_items(),
-            make_walk_datetime_filter(
+            )
+        ).chain(
+            make_filter_items()
+        ).chain(
+            make_filter_items_temporal_extent(
                 datetime,
-            ),
-            make_walk_bbox_filter(
-                bbox,
-            ),
-            make_walk_geometry_filter(
-                intersects,
-            ),
-            make_walk_item_cql2_filter(filter)
+            )
+        ).chain(
+            make_filter_items_spatial_extent(
+                bbox=bbox
+            )
+        ).chain(
+            make_filter_items_spatial_extent(
+                geometry=intersects,
+            )
+        ).chain(
+            make_filter_items_cql2(filter)
         )
 
         if collections:
@@ -146,10 +163,10 @@ def search_items(
                 settings=settings
             )
 
-    filtered_walk = walk_filter_chain(_walk)
+    _walk = walk_filter_chain.make(_walk)
 
     page = WalkPage.paginate(
-        filtered_walk,
+        _walk,
         walk_marker,
         limit
     )
@@ -184,22 +201,24 @@ def search_collections(
     settings: ClientSettings,
     session: Session
 ) -> WalkPage:
-
-    walk_filter_chain = chain_walk_filters(
-        make_walk_pagination_filter(
+    _walk = WalkFilterChainBuilder().chain(
+        make_filter_page(
             start=walk_marker.start if walk_marker else None,
             end=walk_marker.end if walk_marker else None
-        ),
-        make_walk_spatial_extent_filter(
+        )
+    ).chain(
+        make_filter_collections_spatial_extent(
             geometry=bbox,
-        ),
-        make_walk_temporal_extent_filter(
+        )
+    ).chain(
+        make_filter_collections_temporal_extent(
             datetime,
-        ),
-        make_walk_collection_cql2_filter(filter)
-    )
-
-    filtered_walk = walk_filter_chain(
+        )
+    ).chain(
+        make_filter_collections_cql2(
+            filter
+        )
+    ).make(
         walk_collections(
             settings.catalog_href,
             session=session,
@@ -208,7 +227,7 @@ def search_collections(
     )
 
     page = WalkPage.paginate(
-        filtered_walk,
+        _walk,
         walk_marker,
         limit
     )
@@ -257,32 +276,31 @@ def search_collection_items(
     if not collection_walk_result:
         raise CollectionNotFoundError(f"Collection {collection_id} not found.")
 
-    walk_filter_chain = chain_walk_filters(
-        make_walk_pagination_filter(
+    _walk = WalkFilterChainBuilder().chain(
+        make_filter_page(
             start=walk_marker.start if walk_marker else None,
             end=walk_marker.end if walk_marker else None
         ),
-        make_walk_filter_items(),
-        make_walk_datetime_filter(
-            datetime,
-        ),
-        make_walk_bbox_filter(
-            bbox,
-        ),
-        make_walk_geometry_filter(
-            intersects,
-        ),
-        make_walk_item_cql2_filter(filter)
+    ).chain(
+        make_filter_items()
+    ).chain(
+        make_filter_items_temporal_extent(datetime)
+    ).chain(
+        make_filter_items_spatial_extent(bbox=bbox)
+    ).chain(
+        make_filter_items_spatial_extent(geometry=intersects)
+    ).chain(
+        make_filter_items_cql2(filter)
+    ).make(
+        walk(
+            collection_walk_result,
+            session=session,
+            settings=settings
+        )
     )
 
-    filtered_walk = walk_filter_chain(walk(
-        collection_walk_result,
-        session=session,
-        settings=settings
-    ))
-
     page = WalkPage.paginate(
-        filtered_walk,
+        _walk,
         walk_marker,
         limit
     )

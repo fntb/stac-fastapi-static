@@ -8,8 +8,8 @@ import shapely
 
 import stac_pydantic
 
-from stac_fastapi.static.core.walk_filters.temporal_filters import (
-    make_match_datetime
+from stac_fastapi.static.core.lib.datetimes_intersect import (
+    datetimes_intersect
 )
 
 from ..rfc3339 import rfc3339
@@ -135,8 +135,6 @@ def test_search_items_by_datetime(api_base_href: str, catalog: pystac.Catalog):
     for datetimes in datetimes_variants:
         datetime_str = rfc3339.datetime_to_str(datetimes)
 
-        match_datetime = make_match_datetime(datetimes)
-
         get_request_param = f"datetime={datetime_str}" if datetime_str else ""
         post_request_param = {
             "datetime": datetime_str
@@ -153,7 +151,12 @@ def test_search_items_by_datetime(api_base_href: str, catalog: pystac.Catalog):
             assert len(item_collection.items) > 0
 
             for item in item_collection.items:
-                assert match_datetime(stac_pydantic.Item.model_validate(item.to_dict(transform_hrefs=False)))
+                item_datetimes = item.datetime or (
+                    item.properties.get("start_datetime", None),
+                    item.properties.get("end_datetime", None)
+                )
+
+                assert datetimes_intersect(datetimes, item_datetimes)
 
 
 def test_search_items_limit(api_base_href: str, catalog: pystac.Catalog):

@@ -12,7 +12,7 @@ uv:
 
 # Install the dependencies
 install *args: uv
-	uv sync --frozen --all-extras --all-groups {{args}}
+	uv sync --all-extras --all-groups {{args}}
 
 # Build the package and containerized server image
 build: uv

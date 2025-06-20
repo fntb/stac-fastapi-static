@@ -1,7 +1,6 @@
 
 from typing import (
     Iterator,
-    Callable,
     Optional
 )
 
@@ -12,35 +11,32 @@ from stac_pydantic.catalog import Catalog
 import requests
 
 from .walk import (
-    walk,
     WalkResult,
-    SkipWalk,
     chain_walks,
-    WalkSettings
+    WalkSettings,
+    Walk,
+    as_walk
 )
 
-from .walk_filters import (
-    make_walk_filter,
-    backraise_skip_walk
+from .walk_filter import (
+    WalkFilter
 )
+
 
 from .walk_collections import (
     walk_collections
 )
 
 
-def make_walk_filter_items(
-    item_ids: Optional[list[str]] = None,
-):
-    @make_walk_filter
-    def walk_filter_items(walk_result: WalkResult):
+def make_filter_items(item_ids: Optional[list[str]] = None):
+    def filter_items(walk_result: WalkResult) -> WalkResult[Item]:
         if walk_result.type == Item:
             if not item_ids:
                 return walk_result
             elif walk_result.resolve_id() in item_ids:
                 return walk_result
 
-    return walk_filter_items
+    return filter_items
 
 
 def _get_items_from_cache(
@@ -104,21 +100,12 @@ def walk_items(
             session=session,
             settings=settings
     )) is not None:
-        for walk_result in cached_walk_results:
-            try:
-                yield walk_result
-            except SkipWalk:
-                yield None
-
-                continue
+        return as_walk(cached_walk_results)
     else:
-
-        for walk_result in (_walk := make_walk_filter_items(
-            item_ids=item_ids
-        )(
+        return WalkFilter(
             chain_walks(
                 *(
-                    walk(
+                    Walk(
                         collection,
                         session=session,
                         settings=settings
@@ -131,18 +118,13 @@ def walk_items(
                         settings=settings
                     )
                 )
-            ) if collection_ids else walk(
+            ) if collection_ids else Walk(
                 root,
                 session=session,
                 settings=settings,
-            )
-        )):
-            try:
-                yield walk_result
-            except SkipWalk:
-                yield None
-
-                backraise_skip_walk(_walk)
+            ),
+            make_filter_items(item_ids)
+        )
 
 
 def get_item(

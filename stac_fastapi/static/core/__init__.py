@@ -2,34 +2,51 @@
 from .walk_collections import (
     get_collection,
     walk_collections,
+    make_filter_collections
 )
 
 from .walk_items import (
     get_item,
     walk_items,
-    make_walk_filter_items
-)
-
-from .walk_filters import (
-    make_walk_bbox_filter,
-    make_walk_datetime_filter,
-    make_walk_temporal_extent_filter,
-    make_walk_geometry_filter,
-    make_walk_spatial_extent_filter,
-    make_walk_pagination_filter,
-    make_walk_item_cql2_filter,
-    make_walk_collection_cql2_filter,
-    make_walk_depth_filter,
-    chain_walk_filters,
-    # parse_cql2_str,
+    make_filter_items
 )
 
 from .walk import (
     walk,
+    Walk,
     WalkResult,
     SkipWalk,
     chain_walks,
+    as_walk,
     BadWalkResultError
+)
+
+from .walk_filter import (
+    WalkFilter,
+    WalkFilterChainBuilder
+)
+
+from .filter_cql2 import (
+    make_filter_collections_cql2,
+    make_filter_items_cql2
+)
+
+from .filter_depth import (
+    make_filter_depth,
+)
+
+from .filter_page import (
+    make_filter_page,
+)
+
+from .filter_spatial_extent import (
+    make_filter_collections_spatial_extent,
+    make_filter_items_spatial_extent
+)
+
+from .filter_temporal_extent import (
+    make_filter_collections_temporal_extent,
+    make_filter_items_temporal_extent,
 )
 
 from .walk_path import WalkPath
