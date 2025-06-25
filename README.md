@@ -45,19 +45,37 @@ And finally there is what `stac-fastapi-static` brings in addition to the above 
 
 - **plug-and-play** - Just `pip install` or `docker run` the server while pointing it to your deployed or local static catalog.json (see below).
 - **very easy to migrate to (and from)** - `stac-fastapi-static` only requires a valid STAC catalog which it won't touch (just read).
-- best possible performances **given the inherent limits of filesystem reads** - We tried to take advantage of every details of the STAC spec to speed up requests (see below).
+- best possible performances **given the difficult limits of filesystem reads** - We tried to take advantage of every details of the STAC spec to speed up requests (see below).
 
 ### Performances and limitations
 
 Inherently, building an API on a 100,000s items static STAC catalog is going to be far slower than on a database backed catalog, however the STAC specs defines constraints (and recommendations) that can be abused to design a performant enough API.
 
-Our goal is to provide viable performances on a 500,000 item static catalog.
+The goal was to provide viable performances on a 500,000 item static catalog.
 
 ![Response times](./doc/benchmark.png)
 
-_Response times obtained on a (yet) unpublished catalog at the OPGC._
+_Response times obtained on a (yet) unpublished ~2500 items catalog at the OPGC. These measures were obtained by measuring request times client-side._
 
-Results depend quite heavily on the catalog structure. `stac-fastapi-static` is more efficient the more tree-like the catalog is (e.g. serving a single collection of 10,000s items is going to be very inefficient, while on the other hand a deeply nested catalog will be quite efficiently served). Feel free to test on your own catalog :
+**Analysis :**
+
+- `[id=]` - id filtering - time complexity is linear (relative to item / collection count) unless the item / collection id is already cached, then it's fixed (negligible). _An in-memory `walk_path`-`id` cache is built whenever an item is fetched due to a query (even those not using id filtering)._
+- `[bbox=]`, `[intersects=]`, and `[datetime=]` - spatio-temporal filtering - complexity depends heavily on the catalog structure. The more deeply nested the catalog is, and the more distant subcollections are (spatially or temporally), the more the complexity will tend to be logarithmic. _This is because whole branches (collections and subcollections) can be skipped based on their extents._ Conversely a single collection is filtered with linear complexity.
+- `[filter=]` - cql2 filtering - has linear complexity.
+- And pagination complexity tends to logarithmic the more deeply nested the catalog is, and remains linear on a flat collection.
+
+Complex queries (obtained by combining filters) are handled by chaining filters from most to least efficient, thus making even slow cql2 filtering possible.
+
+Slowdowns - such as the one observed in this example - can be caused by :
+
+- Disk read speed : _In this example we encountered read times ranging from .5ms, to some exceptional 500ms, with an eyeballed average at 10ms._
+
+- (Too) complex geometries : _In this example we had some 300,000 points drone flight paths (even using a bbox heuristic, which is done, a false positive results in a geometry intersection computation). **Conversely bbox-like geometries filtering has the same speed as datetime filtering.**_
+
+**Conclusion :**
+
+1. The >100k target is, a-priori, not (yet) achieved in real-world conditions. However it was on a previous randomly generated 125k catalog using bbox geometries and deeply nested collections of 50-100 items.
+2. Test on your own catalog :
 
 ```bash
 just benchmark <path-to-catalog.json>
@@ -72,14 +90,16 @@ docker run \
   --env-file .env \
   --env app_port=8000 \
   --env app_host=0.0.0.0 \
-  --env environment=production \
-  --env log_level=warning \
+	--env reload=false \
+  --env log_level=info \
   --env catalog_href=/var/www/html/static/catalog.json \
   --volume /tmp:/tmp \
   --volume /var/www/html/static:/var/www/html/static \
   --publish 8080:8000 \
-  ghcr.io/fntb/stac-fastapi-static:latest
+  ghcr.io/fntb/stac-fastapi-static:1.0.1
 ```
+
+See [`just run`](./justfile).
 
 ### Alternative Method : Python Packaged API Server
 

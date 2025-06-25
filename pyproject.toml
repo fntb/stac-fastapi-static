@@ -83,9 +83,3 @@ packages = [
 
 [tool.setuptools.dynamic]
 version = { attr = "stac_fastapi.static.__about__.__version__" }
-
-# [[tool.uv.index]]
-# name = "testpypi"
-# url = "https://test.pypi.org/simple/"
-# publish-url = "https://test.pypi.org/legacy/"
-# explicit = true

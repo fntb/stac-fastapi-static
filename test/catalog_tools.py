@@ -117,7 +117,7 @@ def pick_item(catalog: pystac.Catalog | pystac_client.Client) -> pystac.Item:
 
 def pick_collection(catalog: pystac.Catalog | pystac_client.Client) -> pystac.Collection:
     for (i, collection) in enumerate(random_walk_collections(catalog)):
-        if i >= 9:
+        if i >= 9 and isinstance(collection, pystac.Collection):
             return collection
 
 
@@ -137,7 +137,7 @@ def pick_collections(catalog: pystac.Catalog | pystac_client.Client, n: int = 1)
     collections = []
 
     for (i, collection) in enumerate(random_walk_collections(catalog)):
-        if i >= 9 and i < 9 + n:
+        if isinstance(collection, pystac.Collection) and i >= 9 and i < 9 + n:
             collections.append(collection)
         if i >= 9 + n:
             break
@@ -148,59 +148,53 @@ def pick_collections(catalog: pystac.Catalog | pystac_client.Client, n: int = 1)
 def pick_bbox(catalog: pystac.Catalog | pystac_client.Client) -> shapely.Polygon:
     item = pick_item(catalog)
 
-    def get_item_bbox(item: pystac.Item) -> shapely.Polygon | None:
+    def get_item_center(item: pystac.Item) -> shapely.Point | None:
         if item.bbox:
-            return shapely.geometry.box(*item.bbox)
+            return shapely.centroid(shapely.geometry.box(*item.bbox))
         elif item.geometry:
-            return shapely.geometry.box(shapely.geometry.shape(item.geometry).bounds)
+            return shapely.centroid(shapely.geometry.shape(item.geometry))
         else:
-            return None
+            raise ValueError("Item missing geometry")
 
-    if bbox := get_item_bbox(item):
-        return bbox
+    (x, y) = get_item_center(item).coords[0]
 
-    for item in walk_items(catalog):
-        if bbox := get_item_bbox(item):
-            return bbox
-
-    raise ValueError("Catalog doesn't have any valid bbox")
+    return shapely.box(
+        max(x - 0.05, -180),
+        max(y - 0.025, -90),
+        min(x + 0.05, 180),
+        min(y + 0.05, 90)
+    )
 
 
 def pick_geometry(catalog: pystac.Catalog | pystac_client.Client) -> shapely.Geometry:
+
+    return pick_bbox(catalog)
+
     item = pick_item(catalog)
 
-    def get_item_geometry(item: pystac.Item) -> shapely.Geometry | None:
+    def get_item_geometry(item: pystac.Item) -> shapely.Geometry:
         if item.bbox:
             return shapely.geometry.box(*item.bbox)
         elif item.geometry:
             return shapely.geometry.shape(item.geometry)
         else:
-            return None
+            raise ValueError("Item missing geometry")
 
-    if geometry := get_item_geometry(item):
-        return geometry
-
-    for item in walk_items(catalog):
-        if geometry := get_item_geometry(item):
-            return geometry
-
-    raise ValueError("Catalog doesn't have any valid geometry")
+    return get_item_geometry(item)
 
 
 def pick_datetimes(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[Tuple[None | datetime.datetime, None | datetime.datetime]]:
     item = pick_item(catalog)
 
-    def get_item_datetimes(item: pystac.Item) -> Tuple[datetime.datetime, datetime.datetime] | None:
+    def get_item_datetime(item: pystac.Item) -> datetime.datetime:
         if item.datetime:
-            return [item.datetime, item.datetime]
+            return item.datetime
         elif (start_datetime := item.properties.get("start_datetime")) is not None and (end_datetime := item.properties.get("end_datetime")) is not None:
-            if isinstance(start_datetime, str):
-                start_datetime = fromisoformat(start_datetime)
-            if isinstance(end_datetime, str):
-                end_datetime = fromisoformat(end_datetime)
-            return [start_datetime, end_datetime]
+            start_datetime = fromisoformat(start_datetime)
+            end_datetime = fromisoformat(end_datetime)
+            return start_datetime
         else:
-            return None
+            raise ValueError("Item missing datetime")
 
     def make_all_datetimes_variants(datetimes:  Tuple[datetime.datetime, datetime.datetime]) -> Tuple[Tuple[None | datetime.datetime, None | datetime.datetime]]:
         [start_datetime, end_datetime] = datetimes
@@ -212,14 +206,12 @@ def pick_datetimes(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[Tupl
             (start_datetime - datetime.timedelta(days=1), end_datetime + datetime.timedelta(days=1)),
         )
 
-    if datetimes := get_item_datetimes(item):
-        return make_all_datetimes_variants(datetimes)
+    _datetime = get_item_datetime(item)
 
-    for item in walk_items(catalog):
-        if datetimes := get_item_datetimes(item):
-            return make_all_datetimes_variants(datetimes)
-
-    raise ValueError("Catalog doesn't have any valid datetimes")
+    return make_all_datetimes_variants((
+        _datetime - datetime.timedelta(hours=12),
+        _datetime + datetime.timedelta(hours=12)
+    ))
 
 
 def pick_cql2_filters(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[str, Dict, Callable[[pystac.Item], bool]]:
@@ -238,12 +230,14 @@ def pick_cql2_filters(catalog: pystac.Catalog | pystac_client.Client) -> Tuple[s
         else:
             raise Exception("No candidate property found")
 
-    text_filter = f"{property} LIKE '{value[:3]}%'"
-    json_filter = {"op": "like", "args": [{"property": property}, f"{value[:3]}%"]}
+    value = random.choice(value.split())
+
+    text_filter = f"{property} LIKE '%{value}%'"
+    json_filter = {"op": "like", "args": [{"property": property}, f"%{value}%"]}
 
     def validate(item: pystac.Item) -> bool:
         candidate_value = item.properties.get(property, None)
 
-        return isinstance(candidate_value, str) and candidate_value.startswith(value[:3])
+        return isinstance(candidate_value, str) and value in candidate_value
 
     return (text_filter, json_filter, validate)

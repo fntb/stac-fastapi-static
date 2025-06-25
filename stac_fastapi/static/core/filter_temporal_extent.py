@@ -37,10 +37,10 @@ def make_filter_collections_temporal_extent(
     )
 
     def filter_collections_temporal_extent(walk_result: WalkResult) -> bool:
-        if walk_result.type is Catalog:
+        if walk_result.type == (Collection, Catalog):
             walk_result.resolve()
 
-        if walk_result.type is Collection:
+        if walk_result.type == Collection:
             try:
                 matches_temporal_extent = match_temporal_extent(walk_result.object)
             except BadStacObjectError as error:
@@ -72,9 +72,10 @@ def make_filter_items_temporal_extent(
     )
 
     def filter_items_temporal_extent(walk_result: WalkResult) -> bool:
-        walk_result.resolve()
+        if not walk_result.is_resolved():
+            walk_result.resolve()
 
-        if walk_result.type is Collection:
+        if walk_result.type == Collection:
             try:
                 matches_temporal_extent = match_temporal_extent(walk_result.object)
             except BadStacObjectError as error:
@@ -88,7 +89,7 @@ def make_filter_items_temporal_extent(
                 return True
             else:
                 raise SkipWalk
-        elif walk_result.type is Item:
+        elif walk_result.type == Item:
             try:
                 return match_datetime(walk_result.object)
             except BadStacObjectError as error:

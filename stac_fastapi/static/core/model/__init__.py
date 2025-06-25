@@ -14,7 +14,8 @@ from .links import (
 from .spatial import (
     get_bbox,
     get_geometry,
-    get_spatial_extent,
+    get_collection_bbox,
+    get_collection_geometry,
     make_match_geometry,
     make_match_bbox,
     make_match_spatial_extent

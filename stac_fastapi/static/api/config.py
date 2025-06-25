@@ -48,7 +48,8 @@ class Settings(ApiSettings):
 
     environment: Literal["dev", "development", "prod", "production"] = Field(
         "production",
-        description="In dev mode python errors returned from the API are not sanitized and may expose secrets."
+        description="In dev mode python errors returned from the API are not sanitized and may expose secrets.",
+        deprecated="Previous dev mode is assumed if and only if log_level is set to debug"
     )
 
     catalog_href: Union[str] = Field(

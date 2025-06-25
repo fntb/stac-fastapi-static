@@ -6,10 +6,12 @@ from typing import (
     ClassVar,
     NamedTuple,
     TypeVar,
-    Generic
+    Generic,
+    Tuple
 )
 
 import dataclasses
+import time
 import http
 
 
@@ -59,7 +61,7 @@ class WalkResultCache(TieredCache[CachedWalkResult]):
             type=walk_result.type,
             id=id
         )
-        priority = -1 if walk_result.type is Item else 0
+        priority = -1 if walk_result.type == Item else 0
 
         super().set(key, value, priority)
 
@@ -86,18 +88,26 @@ class WalkResult(Generic[T]):
     href: str
     walk_path: WalkPath
 
-    type: Type[T]
+    type: Type[T | Tuple[T]]
     object: Optional[T] = None
+
+    _resolution_time: Optional[float] = None
 
     def __post_init__(self):
         if self.is_resolved():
             self._cache.set(id, self)
 
     def __str__(self):
-        return f"WalkResult(type={self.type.__name__}, href={self.href}, walk_path={str(self.walk_path)})"
+        typ = (typ.__name__ for typ in self.type) if isinstance(self.type, Tuple) else self.type.__name__
+
+        return f"WalkResult(type={typ}, href={self.href}, walk_path={str(self.walk_path)})"
 
     def is_resolved(self):
         return self.object is not None
+
+    @property
+    def resolution_time(self):
+        return self._resolution_time
 
     def resolve(
         self,
@@ -107,7 +117,8 @@ class WalkResult(Generic[T]):
         if self.is_resolved() and not force:
             return self.object
 
-        if self.type is Item:
+        t_start = time.time()
+        if self.type == Item:
             try:
                 self.object = fetch_item(
                     self.href,
@@ -135,6 +146,7 @@ class WalkResult(Generic[T]):
                 raise BadWalkResultError(str(error)) from error
 
         self._cache.set(self.object.id, self)
+        self._resolution_time = (time.time() - t_start) * 1000
 
         return self.object
 

@@ -14,8 +14,8 @@ from .walk import (
     WalkResult,
     chain_walks,
     WalkSettings,
-    Walk,
-    as_walk
+    as_walk,
+    walk
 )
 
 from .walk_filter import (
@@ -105,7 +105,7 @@ def walk_items(
         return WalkFilter(
             chain_walks(
                 *(
-                    Walk(
+                    walk(
                         collection,
                         session=session,
                         settings=settings
@@ -118,7 +118,7 @@ def walk_items(
                         settings=settings
                     )
                 )
-            ) if collection_ids else Walk(
+            ) if collection_ids else walk(
                 root,
                 session=session,
                 settings=settings,

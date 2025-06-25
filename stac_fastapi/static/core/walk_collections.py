@@ -15,7 +15,7 @@ from .walk import (
     WalkResult,
     WalkSettings,
     as_walk,
-    Walk
+    walk
 )
 
 from .walk_filter import (
@@ -49,12 +49,12 @@ def _get_collections_from_cache(
 
 def make_filter_collections(collection_ids: Optional[list[str]] = None):
     def filter_collections(walk_result: WalkResult) -> WalkResult[Collection]:
-        if walk_result.type is Item:
+        if walk_result.type == Item:
             return False
 
         walk_result.resolve()
 
-        if not walk_result.type is Collection:
+        if not walk_result.type == Collection:
             return False
 
         if not collection_ids or walk_result.resolve_id() in collection_ids:
@@ -81,7 +81,7 @@ def walk_collections(
         return as_walk(cached_walk_results)
     else:
         return WalkFilter(
-            Walk(
+            walk(
                 root=root,
                 session=session,
                 settings=settings

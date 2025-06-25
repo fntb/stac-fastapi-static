@@ -11,6 +11,11 @@ import stac_pydantic
 from stac_fastapi.static.core.lib.datetimes_intersect import (
     datetimes_intersect
 )
+from stac_fastapi.static.core.lib.geometries_intersect import (
+    bbox_intersect,
+    geometries_intersect
+)
+from stac_fastapi.static.core.compat.fromisoformat import fromisoformat
 
 from ..rfc3339 import rfc3339
 
@@ -100,8 +105,9 @@ def test_search_items_by_bbox(api_base_href: str, catalog: pystac.Catalog):
         assert len(item_collection.items) > 0
 
         for item in item_collection.items:
-            assert bbox.intersects(
-                shapely.box(*item.bbox)
+            assert bbox_intersect(
+                bbox.bounds,
+                item.bbox
             )
 
 
@@ -124,7 +130,8 @@ def test_search_items_by_geometry_intersection(api_base_href: str, catalog: pyst
         assert len(item_collection.items) > 0
 
         for item in item_collection.items:
-            assert geometry.intersects(
+            assert geometries_intersect(
+                geometry,
                 shapely.geometry.shape(item.geometry)
             )
 
@@ -151,10 +158,17 @@ def test_search_items_by_datetime(api_base_href: str, catalog: pystac.Catalog):
             assert len(item_collection.items) > 0
 
             for item in item_collection.items:
-                item_datetimes = item.datetime or (
+                item_datetimes = (
                     item.properties.get("start_datetime", None),
                     item.properties.get("end_datetime", None)
                 )
+
+                if item_datetimes == (None, None):
+                    item_datetimes = fromisoformat(item.datetime)
+                else:
+                    item_datetimes = tuple(
+                        fromisoformat(datetime) for datetime in item_datetimes
+                    )
 
                 assert datetimes_intersect(datetimes, item_datetimes)
 

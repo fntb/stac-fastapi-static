@@ -13,7 +13,6 @@ from .walk_items import (
 
 from .walk import (
     walk,
-    Walk,
     WalkResult,
     SkipWalk,
     chain_walks,
@@ -23,7 +22,6 @@ from .walk import (
 
 from .walk_filter import (
     WalkFilter,
-    WalkFilterChainBuilder
 )
 
 from .filter_cql2 import (

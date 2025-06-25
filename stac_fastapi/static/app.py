@@ -27,10 +27,6 @@ def main():
     try:
         import uvicorn
 
-        if settings.reload and settings.environment not in ["prod", "production"]:
-            settings.reload = False
-            logger.warning("Overriding reload setting in development / test environment")
-
         logger.warning("Settings : %s", settings.model_dump())
 
         uvicorn.run(

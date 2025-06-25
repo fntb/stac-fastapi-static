@@ -1,14 +1,20 @@
 from typing import (
     Optional,
     List,
-    Any,
     Union,
     Tuple,
     Dict,
-    Literal
+    Callable,
+    Iterator
+)
+
+from typing_extensions import (
+    Self
 )
 
 import datetime as datetimelib
+import time
+import math
 
 from stac_pydantic.shared import BBox
 from stac_pydantic.api.search import Intersection
@@ -23,7 +29,9 @@ from requests import Session
 from .walk import (
     WalkSettings,
     chain_walks,
-    walk
+    walk,
+    logger,
+    WalkResult,
 )
 
 from .walk_items import (
@@ -43,7 +51,7 @@ from .pagination import (
 )
 
 from .walk_filter import (
-    WalkFilterChainBuilder
+    WalkFilter
 )
 
 from .filter_page import (
@@ -68,6 +76,7 @@ from .filter_spatial_extent import (
 
 class ClientSettings(WalkSettings):
     catalog_href: str
+    log_level: str
 
 
 Datetime = Union[
@@ -76,6 +85,28 @@ Datetime = Union[
     Tuple[datetimelib.datetime, None],
     Tuple[None, datetimelib.datetime],
 ]
+
+
+def walk_page(
+    walk: Iterator[WalkResult] | WalkFilter,
+    walk_marker: Optional[WalkMarker] = None,
+    limit: Optional[int] = 10
+) -> WalkPage:
+    t_start = time.time()
+    page = WalkPage.paginate(
+        walk,
+        walk_marker,
+        limit
+    )
+    dt = (time.time() - t_start) * 1000
+
+    if isinstance(walk, WalkFilter) and dt >= 250:
+        logger.warning(
+            f"Slow response time : {math.ceil(dt)}ms : " +
+            " ~ ".join([str(stats) for stats in walk.chain_stats])
+        )
+
+    return page
 
 
 def search_items(
@@ -93,11 +124,11 @@ def search_items(
 ) -> WalkPage:
 
     if ids:
-        walk_filter_chain = WalkFilterChainBuilder().chain(
+        walk_filter_chain = WalkFilter.build_chain(
             make_filter_page(
-                start=walk_marker.start if walk_marker else None,
-                end=walk_marker.end if walk_marker else None
-            )
+                start=walk_marker.start,
+                end=walk_marker.end
+            ) if walk_marker is not None else None
         )
 
         _walk = walk_items(
@@ -108,35 +139,27 @@ def search_items(
             settings=settings
         )
     else:
-        walk_filter_chain = WalkFilterChainBuilder().chain(
+        walk_filter_chain = WalkFilter.build_chain(
             make_filter_page(
-                start=walk_marker.start if walk_marker else None,
-                end=walk_marker.end if walk_marker else None
-            )
-        ).chain(
+                start=walk_marker.start,
+                end=walk_marker.end
+            ) if walk_marker is not None else None,
             make_filter_collections_spatial_extent(
-                geometry=bbox or intersects,
-            )
-        ).chain(
+                bbox=bbox,
+                geometry=intersects,
+            ) if bbox is not None or intersects is not None else None,
             make_filter_collections_temporal_extent(
                 datetime,
-            )
-        ).chain(
-            make_filter_items()
-        ).chain(
+            ) if datetime is not None and datetime != (None, None) else None,
+            make_filter_items(),
             make_filter_items_temporal_extent(
                 datetime,
-            )
-        ).chain(
+            ) if datetime is not None and datetime != (None, None) else None,
             make_filter_items_spatial_extent(
-                bbox=bbox
-            )
-        ).chain(
-            make_filter_items_spatial_extent(
-                geometry=intersects,
-            )
-        ).chain(
-            make_filter_items_cql2(filter)
+                bbox=bbox,
+                geometry=intersects
+            ) if bbox is not None or intersects is not None else None,
+            make_filter_items_cql2(filter) if filter is not None else None
         )
 
         if collections:
@@ -163,15 +186,13 @@ def search_items(
                 settings=settings
             )
 
-    _walk = walk_filter_chain.make(_walk)
+    _walk = walk_filter_chain(_walk)
 
-    page = WalkPage.paginate(
+    return walk_page(
         _walk,
         walk_marker,
         limit
     )
-
-    return page
 
 
 def get_item(
@@ -201,24 +222,21 @@ def search_collections(
     settings: ClientSettings,
     session: Session
 ) -> WalkPage:
-    _walk = WalkFilterChainBuilder().chain(
+    _walk = WalkFilter.build_chain(
         make_filter_page(
-            start=walk_marker.start if walk_marker else None,
-            end=walk_marker.end if walk_marker else None
-        )
-    ).chain(
+            start=walk_marker.start,
+            end=walk_marker.end
+        ) if walk_marker is not None else None,
         make_filter_collections_spatial_extent(
-            geometry=bbox,
-        )
-    ).chain(
+            bbox=bbox,
+        ) if bbox is not None else None,
         make_filter_collections_temporal_extent(
             datetime,
-        )
-    ).chain(
+        ) if datetime is not None and datetime != (None, None) else None,
         make_filter_collections_cql2(
             filter
-        )
-    ).make(
+        ) if filter is not None else None
+    )(
         walk_collections(
             settings.catalog_href,
             session=session,
@@ -226,13 +244,11 @@ def search_collections(
         )
     )
 
-    page = WalkPage.paginate(
+    return walk_page(
         _walk,
         walk_marker,
         limit
     )
-
-    return page
 
 
 def get_collection(
@@ -276,22 +292,19 @@ def search_collection_items(
     if not collection_walk_result:
         raise CollectionNotFoundError(f"Collection {collection_id} not found.")
 
-    _walk = WalkFilterChainBuilder().chain(
+    _walk = WalkFilter.build_chain(
         make_filter_page(
-            start=walk_marker.start if walk_marker else None,
-            end=walk_marker.end if walk_marker else None
-        ),
-    ).chain(
-        make_filter_items()
-    ).chain(
-        make_filter_items_temporal_extent(datetime)
-    ).chain(
-        make_filter_items_spatial_extent(bbox=bbox)
-    ).chain(
-        make_filter_items_spatial_extent(geometry=intersects)
-    ).chain(
-        make_filter_items_cql2(filter)
-    ).make(
+            start=walk_marker.start,
+            end=walk_marker.end
+        ) if walk_marker is not None else None,
+        make_filter_items(),
+        make_filter_items_temporal_extent(datetime) if datetime is not None and datetime != (None, None) else None,
+        make_filter_items_spatial_extent(
+            bbox=bbox,
+            geometry=intersects
+        ) if bbox is not None or intersects is not None else None,
+        make_filter_items_cql2(filter) if filter is not None else None
+    )(
         walk(
             collection_walk_result,
             session=session,
@@ -299,10 +312,8 @@ def search_collection_items(
         )
     )
 
-    page = WalkPage.paginate(
+    return walk_page(
         _walk,
         walk_marker,
         limit
     )
-
-    return page

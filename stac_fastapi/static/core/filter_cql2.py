@@ -1,5 +1,6 @@
 from typing import (
     Dict,
+    Optional
 )
 
 import logging
@@ -22,12 +23,12 @@ from .model import (
 logger = logging.getLogger(__name__)
 
 
-def make_filter_items_cql2(cql2: str | Dict):
+def make_filter_items_cql2(cql2: Optional[str | Dict] = None):
 
     match_cql2 = make_match_item_cql2(cql2)
 
     def filter_items_cql2(walk_result: WalkResult) -> bool:
-        if walk_result.type is Item:
+        if walk_result.type == Item:
             try:
                 return match_cql2(walk_result.resolve())
             except Exception as error:
@@ -42,15 +43,15 @@ def make_filter_items_cql2(cql2: str | Dict):
     return filter_items_cql2
 
 
-def make_filter_collections_cql2(cql2: str | Dict):
+def make_filter_collections_cql2(cql2: Optional[str | Dict] = None):
 
     match_cql2 = make_match_collection_cql2(cql2)
 
     def filter_collections_cql2(walk_result: WalkResult) -> bool:
-        if walk_result.type in (Collection, Catalog):
+        if walk_result.type == (Collection, Catalog):
             walk_result.resolve()
 
-        if walk_result.type is Collection:
+        if walk_result.type == Collection:
             try:
                 return match_cql2(walk_result.resolve())
             except Exception as error:

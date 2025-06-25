@@ -2,6 +2,7 @@ from typing import (
     Annotated
 )
 
+import logging
 import contextlib
 import datetime as datetimelib
 from os import path
@@ -68,6 +69,8 @@ from stac_fastapi.types.search import (
     BaseSearchGetRequest,
     BaseSearchPostRequest
 )
+
+logger = logging.getLogger(__name__)
 
 
 @contextlib.asynccontextmanager
@@ -163,7 +166,9 @@ def make_api(settings: Settings):
         ],
     )
 
-    if settings.environment == "dev":
+    if settings.log_level == "debug":
+        logger.warning("Security Warning : With log_level set to 'debug' errors are sent to clients with detailed context")
+
         async def safe_http_exception_handler(request, error: StarletteHTTPException):
             if isinstance(error, StarletteHTTPException):
                 if isinstance(error.detail, pydantic.ValidationError):

@@ -57,24 +57,27 @@ class Benchmark():
         ax1.set_ylabel("ms")
         ax1.set_yscale("log")
 
-        ax1.set_xticks(np.arange(1, len(labels) + 1), labels=labels, rotation=90)
+        ax1.set_xticklabels(labels, rotation=90, fontsize=8)
         ax1.set_xlim(0.25, len(labels) + 0.75)
         ax1.set_xlabel("Route")
 
-        ax1.violinplot(values, showmedians=True, showmeans=True)  # , quantiles=[[0.05, 0.95] for _ in labels]
+        ax1.boxplot(values)
 
-        ax2.set_title("Response Time (cropped)")
+        ax2.set_title("Response Time (linear scale, cropped)")
         ax2.set_ylabel("ms")
-        ax2.set_ylim([0, 200])
+        ax2.set_ylim([0, min(
+            np.quantile(np.array([value for _values in values for value in _values]), 0.90),
+            250
+        )])
 
-        ax2.set_xticks(np.arange(1, len(labels) + 1), labels=labels, rotation=90)
+        ax2.set_xticklabels(labels, rotation=90, fontsize=8)
         ax2.set_xlim(0.25, len(labels) + 0.75)
         ax2.set_xlabel("Route")
 
-        ax2.violinplot(values, showmedians=True, showmeans=True)
+        ax2.boxplot(values)
 
         plt.tight_layout()
-        plt.savefig(os.path.join(dir, "benchmark.png"), bbox_inches="tight")
+        plt.savefig(os.path.join(dir, "benchmark.png"), bbox_inches="tight", dpi=200)
 
 
 _benchmark = Benchmark()
