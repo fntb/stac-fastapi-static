@@ -53,7 +53,7 @@ Inherently, building an API on a 100,000s items static STAC catalog is going to 
 
 The goal was to provide viable performances on a 500,000 item static catalog.
 
-![Response times](https://github.com/fntb/stac-fastapi-static/doc/benchmark.png)
+![Response times](https://raw.githubusercontent.com/fntb/stac-fastapi-static/main/doc/benchmark.png)
 
 _Response times obtained on a (yet) unpublished ~2500 items catalog at the OPGC. These measures were obtained by measuring request times client-side._
 
@@ -99,7 +99,7 @@ docker run \
   ghcr.io/fntb/stac-fastapi-static:1.0.1
 ```
 
-See [`just run`](https://github.com/fntb/stac-fastapi-static/justfile).
+See [`just run`](https://github.com/fntb/stac-fastapi-static/blob/main/justfile).
 
 ### Alternative Method : Python Packaged API Server
 
@@ -118,7 +118,7 @@ stac-fastapi-static
 
 ### Configuration Options
 
-See [the Settings model](https://github.com/fntb/stac-fastapi-static/stac_fastapi/static/api/config.py).
+See [the Settings model](https://github.com/fntb/stac-fastapi-static/blob/main/stac_fastapi/static/api/config.py).
 
 Amongst other :
 
@@ -141,9 +141,9 @@ class Settings(ApiSettings):
 just --list
 ```
 
-Or see [the Justfile](https://github.com/fntb/stac-fastapi-static/justfile).
+Or see [the Justfile](https://github.com/fntb/stac-fastapi-static/blob/main/justfile).
 
-Release checklist : bump [version](https://github.com/fntb/stac-fastapi-static/stac_fastapi/static/__about__.py), build, test build, commit, tag, push, publish to pypi and ghcr.
+Release checklist : bump [version](https://github.com/fntb/stac-fastapi-static/blob/main/stac_fastapi/static/__about__.py), build, test build, commit, tag, push, publish to pypi and ghcr.
 
 ## History
 
@@ -151,4 +151,4 @@ Release checklist : bump [version](https://github.com/fntb/stac-fastapi-static/s
 
 ## License
 
-[OPEN LICENCE 2.0](https://github.com/fntb/stac-fastapi-static/LICENCE.txt)
+[OPEN LICENCE 2.0](https://github.com/fntb/stac-fastapi-static/blob/main/LICENCE.txt)
